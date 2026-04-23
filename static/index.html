@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grundriss Flächenmesser</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Grundriss Flächenmesser</h1>
+  </header>
+  <main>
+    <section id="controls">
+      <label class="file-upload">
+        PDF hochladen:
+        <input id="fileInput" type="file" accept="application/pdf">
+      </label>
+<div class="calibration">
+        <button id="startCal">Kalibrieren (2 Punkte)</button>
+        <span id="calInfo">Keine Kalibrierung</span>
+      </div>
+      <div class="zoom-controls">
+        <button id="zoomOut" title="Herauszoomen">-</button>
+        <span id="zoomLevel">100%</span>
+        <button id="zoomIn" title="Hineinzoomen">+</button>
+        <button id="zoomReset" title="Zoom zurücksetzen">Reset</button>
+      </div>
+      <div class="tools">
+        <button id="drawPoly">Neues Polygon</button>
+        <button id="finishPoly">Fertig</button>
+        <span id="currentPolyName"></span>
+      </div>
+      <div class="export">
+        <button id="exportPdf">Als PDF exportieren</button>
+        <button id="saveProject">Projekt speichern (.json)</button>
+        <label class="file-upload">
+          Projekt laden:
+          <input id="loadProject" type="file" accept="application/json">
+        </label>
+      </div>
+    </section>
+
+    <div id="mainContent">
+      <aside id="sidebar">
+        <h3>Polygone</h3>
+        <div id="polygonList"></div>
+      </aside>
+
+      <section id="viewer">
+        <div id="pdfContainer">
+          <canvas id="pdfCanvas"></canvas>
+          <svg id="overlay"></svg>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="vendor/pdfjs/build/pdf.js"></script>
+  <script src="vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

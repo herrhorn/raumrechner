@@ -1,0 +1,36 @@
+*{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+body{margin:0;background:#f6f8fa;color:#111}
+header{background:#0f172a;color:white;padding:12px 16px}
+main{padding:12px}
+#controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+#mainContent{display:flex;gap:12px}
+#sidebar{width:280px;background:white;border:1px solid #ddd;border-radius:6px;padding:12px;flex-shrink:0;max-height:calc(100vh - 180px);overflow-y:auto}
+#sidebar h3{margin:0 0 12px 0;font-size:16px;font-weight:600}
+#polygonList{display:flex;flex-direction:column;gap:8px}
+.polygon-item{padding:10px;border:1px solid #e0e0e0;border-radius:4px;cursor:pointer;transition:all 0.2s}
+.polygon-item:hover{background:#f0f7ff;border-color:#0066cc}
+.polygon-item.active{background:#e3f2fd;border-color:#0066cc;box-shadow:0 0 0 2px rgba(0,102,204,0.1)}
+.polygon-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.polygon-item-name{font-weight:600;font-size:14px;color:#111}
+.polygon-item-area{font-size:13px;color:#666}
+.polygon-item-actions{display:flex;gap:4px}
+.polygon-item-actions button{background:none;border:none;cursor:pointer;padding:4px;font-size:12px;color:#666}
+.polygon-item-actions button:hover{color:#d32f2f}
+#viewer{flex:1;min-width:0}
+#pdfContainer{position:relative;border:1px solid #ddd;background:white;max-width:100%;overflow:auto;border-radius:6px}
+#pdfCanvas{display:block;max-width:100%;height:auto}
+#overlay{position:absolute;left:0;top:0;pointer-events:auto}
+#overlay > *{pointer-events:none}
+.file-upload input{display:inline-block}
+.tools button{margin-right:6px}
+.export button{margin-right:8px;padding:8px 14px;background:#0066cc;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500}
+.export button:hover{background:#0052a3}
+.export .file-upload{display:inline-block;margin-left:4px}
+.zoom-controls{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f0f0f0;border-radius:6px}
+.zoom-controls button{padding:6px 12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:16px;font-weight:bold;min-width:36px}
+.zoom-controls button:hover{background:#e8e8e8;border-color:#999}
+.zoom-controls button:active{background:#d8d8d8}
+.zoom-controls #zoomLevel{font-size:14px;font-weight:600;color:#333;min-width:50px;text-align:center}
+.zoom-controls #zoomReset{font-size:13px;font-weight:normal;min-width:auto}
+#currentPolyName{font-weight:600;color:#0066cc;margin-left:8px}
+@media (max-width:900px){#mainContent{flex-direction:column}#sidebar{width:100%;max-height:300px}}

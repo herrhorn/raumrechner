@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd frontend && npm install",
+  "outputDirectory": "static",
+  "framework": null
+}
