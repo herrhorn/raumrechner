@@ -245,6 +245,8 @@ drawPolyBtn.addEventListener('click', ()=>{
   
   drawingMode = true;
   finishPolyBtn.hidden = false;
+  finishPolyBtn.classList.replace('btn-secondary', 'btn-primary');
+  drawPolyBtn.disabled = true;
   currentPolygon = [];
   currentPolygonId = nextPolygonId++;
   currentPolyName.textContent = `Zeichne: ${name}`;
@@ -272,6 +274,8 @@ finishPolyBtn.addEventListener('click', ()=>{
   
   drawingMode = false;
   finishPolyBtn.hidden = true;
+  finishPolyBtn.classList.replace('btn-primary', 'btn-secondary');
+  drawPolyBtn.disabled = false;
 
   // Save polygon
   const poly = polygons.find(p => p.id === currentPolygonId);

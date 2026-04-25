@@ -38,6 +38,7 @@ main{padding:12px;flex:1;display:flex;flex-direction:column;min-height:0;overflo
 .btn-success{background:#16a34a;color:white;border-color:#16a34a}
 .btn-success:hover{background:#15803d;border-color:#15803d}
 [hidden]{display:none!important}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 .file-btn{position:relative;overflow:hidden}
 .file-btn input{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer}
 
