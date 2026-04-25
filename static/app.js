@@ -83,8 +83,11 @@ function loadPdfFromUrl(url){
     pdfDoc = pdf;
     pdf.getPage(1).then(function(page){
       const baseVp = page.getViewport({scale: 1});
-      const containerWidth = pdfContainer.clientWidth || 800;
-      fitScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, containerWidth / baseVp.width));
+      const containerWidth = (pdfContainer.clientWidth || 800) - 4;
+      const containerHeight = (pdfContainer.clientHeight || 600) - 4;
+      fitScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE,
+        Math.min(containerWidth / baseVp.width, containerHeight / baseVp.height)
+      ));
       scale = fitScale;
       renderPage(pdfDoc, 1);
     });
