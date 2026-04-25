@@ -12,6 +12,20 @@ document.querySelectorAll('.card-header').forEach(header => {
   });
 });
 
+function updateCalibrationButton() {
+  startCal.classList.remove('btn-secondary', 'btn-danger', 'btn-success');
+  if (pxPerMeter) {
+    startCal.classList.add('btn-success');
+    startCal.textContent = 'Kalibriert';
+  } else if (pdfDoc) {
+    startCal.classList.add('btn-danger');
+    startCal.textContent = 'Kalibrieren (2 Punkte)';
+  } else {
+    startCal.classList.add('btn-secondary');
+    startCal.textContent = 'Kalibrieren (2 Punkte)';
+  }
+}
+
 const fileInput = document.getElementById('fileInput');
 const canvas = document.getElementById('pdfCanvas');
 const overlay = document.getElementById('overlay');
@@ -97,6 +111,7 @@ function loadPdfFromUrl(url){
       ));
       scale = fitScale;
       renderPage(pdfDoc, 1);
+      updateCalibrationButton();
     });
   });
 }
@@ -136,10 +151,9 @@ overlay.addEventListener('click', (ev)=>{
       }
       pxPerMeter = distPx / meters;
       calibrationMode = false;
-      calInfo.textContent = `Kalibrierung: ${pxPerMeter.toFixed(2)} px/m`;
+      calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
       removeCalibrationPoints();
-      
-      // Recalculate all polygon areas with new calibration
+      updateCalibrationButton();
       recalculateAllAreas();
     }
     return;
@@ -230,10 +244,11 @@ drawPolyBtn.addEventListener('click', ()=>{
   if(!name) return;
   
   drawingMode = true;
+  finishPolyBtn.hidden = false;
   currentPolygon = [];
   currentPolygonId = nextPolygonId++;
   currentPolyName.textContent = `Zeichne: ${name}`;
-  
+
   // Create new polygon entry
   polygons.push({
     id: currentPolygonId,
@@ -256,14 +271,15 @@ finishPolyBtn.addEventListener('click', ()=>{
   }
   
   drawingMode = false;
-  
+  finishPolyBtn.hidden = true;
+
   // Save polygon
   const poly = polygons.find(p => p.id === currentPolygonId);
   if(poly) {
     poly.points = [...currentPolygon];
     poly.area = computeAreaForPoints(currentPolygon);
   }
-  
+
   currentPolygon = [];
   currentPolygonId = null;
   currentPolyName.textContent = '';
@@ -583,8 +599,9 @@ loadPdfFromUrl = function(url) {
       // Restore calibration
       pxPerMeter = projectData.calibration;
       if(pxPerMeter) {
-        calInfo.textContent = `Kalibrierung: ${pxPerMeter.toFixed(2)} px/m`;
+        calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
       }
+      updateCalibrationButton();
       
       // Restore polygons
       polygons = projectData.polygons || [];

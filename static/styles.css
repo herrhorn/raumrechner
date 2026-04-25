@@ -15,7 +15,7 @@ main{padding:12px;flex:1;display:flex;flex-direction:column;min-height:0;overflo
 .card-header:hover{background:#fafbfc}
 .card-num{width:22px;height:22px;border-radius:50%;background:#0f172a;color:white;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .card-title{flex:1;font-size:14px;font-weight:600;color:#111}
-.card-toggle{transition:transform 0.2s;color:#999;font-size:12px}
+.card-toggle{transition:transform 0.2s;color:#666;font-size:18px;line-height:1}
 .card.collapsed .card-toggle{transform:rotate(-90deg)}
 .card.collapsed .card-body{display:none}
 .card.collapsed .card-header{border-bottom:none}
@@ -33,6 +33,11 @@ main{padding:12px;flex:1;display:flex;flex-direction:column;min-height:0;overflo
 .btn-primary:hover{background:#0052a3;border-color:#0052a3}
 .btn-secondary{background:white;color:#333;border-color:#ccc}
 .btn-secondary:hover{background:#f5f7fa;border-color:#999}
+.btn-danger{background:#dc2626;color:white;border-color:#dc2626}
+.btn-danger:hover{background:#b91c1c;border-color:#b91c1c}
+.btn-success{background:#16a34a;color:white;border-color:#16a34a}
+.btn-success:hover{background:#15803d;border-color:#15803d}
+[hidden]{display:none!important}
 .file-btn{position:relative;overflow:hidden}
 .file-btn input{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer}
 
