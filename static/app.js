@@ -25,6 +25,7 @@ const zoomLevelSpan = document.getElementById('zoomLevel');
 
 let pdfDoc = null;
 let scale = 1; // render scale for PDF.js
+let fitScale = 1; // scale that fits the container width
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 0.25;
@@ -52,8 +53,8 @@ function resetOverlaySize(){
   overlay.setAttribute('width', canvas.width);
   overlay.setAttribute('height', canvas.height);
   overlay.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
-  overlay.style.width = '100%';
-  overlay.style.height = '100%';
+  overlay.style.width = canvas.width + 'px';
+  overlay.style.height = canvas.height + 'px';
 }
 
 function renderPage(pdf, pageNum=1){
@@ -61,8 +62,6 @@ function renderPage(pdf, pageNum=1){
     const viewport = page.getViewport({scale});
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    canvas.style.width = '100%';
-    canvas.style.height = 'auto';
     pageWidthPx = viewport.width;
     pageHeightPx = viewport.height;
     const renderContext = {canvasContext: ctx, viewport};
@@ -82,7 +81,13 @@ function updateZoomDisplay() {
 function loadPdfFromUrl(url){
   pdfjsLib.getDocument({url}).promise.then(function(pdf){
     pdfDoc = pdf;
-    renderPage(pdfDoc, 1);
+    pdf.getPage(1).then(function(page){
+      const baseVp = page.getViewport({scale: 1});
+      const containerWidth = pdfContainer.clientWidth || 800;
+      fitScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, containerWidth / baseVp.width));
+      scale = fitScale;
+      renderPage(pdfDoc, 1);
+    });
   });
 }
 
@@ -557,9 +562,6 @@ loadProjectInput.addEventListener('change', async (e) => {
 // Hook into PDF loading to restore project data
 const originalLoadPdfFromUrl = loadPdfFromUrl;
 loadPdfFromUrl = function(url) {
-  // Reset zoom when loading new PDF
-  scale = 1;
-  
   originalLoadPdfFromUrl(url);
   
   // Check if there's a pending project to restore
@@ -790,22 +792,40 @@ exportPdfBtn.addEventListener('click', async () => {
 // Basic helper to fetch example local file if needed
 window.loadPdfFromUrl = loadPdfFromUrl; // expose for debugging
 
+// Scale all stored pixel coordinates when zoom level changes
+function scalePoints(ratio) {
+  if(ratio === 1) return;
+  polygons.forEach(poly => {
+    poly.points = poly.points.map(pt => ({x: pt.x * ratio, y: pt.y * ratio}));
+  });
+  currentPolygon = currentPolygon.map(pt => ({x: pt.x * ratio, y: pt.y * ratio}));
+  // pxPerMeter is also in canvas-pixel units, must scale with everything else
+  if(pxPerMeter) {
+    pxPerMeter *= ratio;
+  }
+}
+
 // Zoom functionality
 zoomInBtn.addEventListener('click', () => {
   if(!pdfDoc) return;
-  scale = Math.min(scale + SCALE_STEP, MAX_SCALE);
+  const newScale = Math.min(scale + SCALE_STEP, MAX_SCALE);
+  scalePoints(newScale / scale);
+  scale = newScale;
   renderPage(pdfDoc, 1);
 });
 
 zoomOutBtn.addEventListener('click', () => {
   if(!pdfDoc) return;
-  scale = Math.max(scale - SCALE_STEP, MIN_SCALE);
+  const newScale = Math.max(scale - SCALE_STEP, MIN_SCALE);
+  scalePoints(newScale / scale);
+  scale = newScale;
   renderPage(pdfDoc, 1);
 });
 
 zoomResetBtn.addEventListener('click', () => {
   if(!pdfDoc) return;
-  scale = 1;
+  scalePoints(fitScale / scale);
+  scale = fitScale;
   renderPage(pdfDoc, 1);
 });
 
@@ -813,13 +833,15 @@ zoomResetBtn.addEventListener('click', () => {
 const pdfContainer = document.getElementById('pdfContainer');
 pdfContainer.addEventListener('wheel', (e) => {
   if(!pdfDoc) return;
-  
+
   // Check if Ctrl/Cmd key is pressed for zoom
   if(e.ctrlKey || e.metaKey) {
     e.preventDefault();
-    
+
     const delta = e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
-    scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+    scalePoints(newScale / scale);
+    scale = newScale;
     renderPage(pdfDoc, 1);
   }
 }, { passive: false });

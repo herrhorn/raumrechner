@@ -18,7 +18,7 @@ main{padding:12px}
 .polygon-item-actions button:hover{color:#d32f2f}
 #viewer{flex:1;min-width:0}
 #pdfContainer{position:relative;border:1px solid #ddd;background:white;max-width:100%;overflow:auto;border-radius:6px}
-#pdfCanvas{display:block;max-width:100%;height:auto}
+#pdfCanvas{display:block}
 #overlay{position:absolute;left:0;top:0;pointer-events:auto}
 #overlay > *{pointer-events:none}
 .file-upload input{display:inline-block}
