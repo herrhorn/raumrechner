@@ -9,42 +9,65 @@
 <body>
   <header>
     <h1>Grundriss Flächenmesser</h1>
+    <div class="zoom-controls">
+      <button id="zoomOut" title="Herauszoomen">−</button>
+      <span id="zoomLevel">100%</span>
+      <button id="zoomIn" title="Hineinzoomen">+</button>
+      <button id="zoomReset" title="Zoom zurücksetzen">Reset</button>
+    </div>
   </header>
   <main>
-    <section id="controls">
-      <label class="file-upload">
-        PDF hochladen:
-        <input id="fileInput" type="file" accept="application/pdf">
-      </label>
-<div class="calibration">
-        <button id="startCal">Kalibrieren (2 Punkte)</button>
-        <span id="calInfo">Keine Kalibrierung</span>
-      </div>
-      <div class="zoom-controls">
-        <button id="zoomOut" title="Herauszoomen">-</button>
-        <span id="zoomLevel">100%</span>
-        <button id="zoomIn" title="Hineinzoomen">+</button>
-        <button id="zoomReset" title="Zoom zurücksetzen">Reset</button>
-      </div>
-      <div class="tools">
-        <button id="drawPoly">Neues Polygon</button>
-        <button id="finishPoly">Fertig</button>
-        <span id="currentPolyName"></span>
-      </div>
-      <div class="export">
-        <button id="exportPdf">Als PDF exportieren</button>
-        <button id="saveProject">Projekt speichern (.json)</button>
-        <label class="file-upload">
-          Projekt laden:
-          <input id="loadProject" type="file" accept="application/json">
-        </label>
-      </div>
-    </section>
-
     <div id="mainContent">
       <aside id="sidebar">
-        <h3>Polygone</h3>
-        <div id="polygonList"></div>
+        <section class="card" data-card="grundriss">
+          <button class="card-header" type="button">
+            <span class="card-num">1</span>
+            <span class="card-title">Grundriss</span>
+            <span class="card-toggle" aria-hidden="true">▾</span>
+          </button>
+          <div class="card-body">
+            <div class="field">
+              <label for="fileInput" class="field-label">PDF Datei</label>
+              <input id="fileInput" type="file" accept="application/pdf">
+            </div>
+            <div class="card-divider"></div>
+            <div class="field">
+              <span class="field-label">Kalibrierung</span>
+              <span id="calInfo" class="field-value">Keine Kalibrierung</span>
+            </div>
+            <button id="startCal" class="btn btn-secondary">Kalibrieren (2 Punkte)</button>
+          </div>
+        </section>
+
+        <section class="card" data-card="polygons">
+          <button class="card-header" type="button">
+            <span class="card-num">2</span>
+            <span class="card-title">Polygone</span>
+            <span class="card-toggle" aria-hidden="true">▾</span>
+          </button>
+          <div class="card-body">
+            <button id="drawPoly" class="btn btn-primary">+ Neues Polygon</button>
+            <button id="finishPoly" class="btn btn-secondary">Hinzufügen</button>
+            <div id="currentPolyName"></div>
+            <div id="polygonList"></div>
+          </div>
+        </section>
+
+        <section class="card" data-card="project">
+          <button class="card-header" type="button">
+            <span class="card-num">3</span>
+            <span class="card-title">Projekt</span>
+            <span class="card-toggle" aria-hidden="true">▾</span>
+          </button>
+          <div class="card-body">
+            <button id="saveProject" class="btn btn-primary">Projekt speichern (.json)</button>
+            <label class="btn btn-secondary file-btn">
+              Projekt laden
+              <input id="loadProject" type="file" accept="application/json">
+            </label>
+            <button id="exportPdf" class="btn btn-primary">Als PDF exportieren</button>
+          </div>
+        </section>
       </aside>
 
       <section id="viewer">

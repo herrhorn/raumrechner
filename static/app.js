@@ -5,6 +5,13 @@ if (window['pdfjsLib']) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/build/pdf.worker.js';
 }
 
+// Collapsible sidebar cards
+document.querySelectorAll('.card-header').forEach(header => {
+  header.addEventListener('click', () => {
+    header.parentElement.classList.toggle('collapsed');
+  });
+});
+
 const fileInput = document.getElementById('fileInput');
 const canvas = document.getElementById('pdfCanvas');
 const overlay = document.getElementById('overlay');
