@@ -52,7 +52,9 @@ const MAX_SCALE = 5.0;
 const SCALE_STEP = 0.25;
 let pageWidthPx = 0; // width of canvas in pixels
 let pageHeightPx = 0;
-let currentPdfFilename = null; // Track current PDF filename for project saving
+let currentPdfFilename = null;
+let currentPdfBytes = null;   // original PDF ArrayBuffer for cloud upload
+let currentPdfBlobUrl = null; // Vercel Blob URL if PDF is already in cloud
 
 // Calibration state
 let calibrationMode = false;
@@ -136,6 +138,8 @@ fileInput.addEventListener('change', (e) => {
   const f = e.target.files[0];
   if (!f) return;
   currentPdfFilename = f.name;
+  currentPdfBlobUrl = null;
+  f.arrayBuffer().then(buf => { currentPdfBytes = buf; });
   loadPdfFromUrl(URL.createObjectURL(f));
 });
 
@@ -581,22 +585,7 @@ saveProjectBtn.addEventListener('click', () => {
     return;
   }
   
-  const projectData = {
-    version: '2.0',
-    coordinateSpace: 'pdf',
-    pdfFilename: currentPdfFilename,
-    calibration: pxPerMeter ? pxPerMeter / scale : null,
-    polygons: polygons.map(p => ({
-      id: p.id,
-      name: p.name,
-      points: p.points.map(pt => ({ x: pt.x / scale, y: pt.y / scale })),
-      area: p.area !== null ? p.area / (scale * scale) : null,
-      color: p.color,
-      visible: p.visible,
-      workplaces: p.workplaces || 0
-    })),
-    timestamp: new Date().toISOString()
-  };
+  const projectData = buildProjectData();
   
   const dataStr = JSON.stringify(projectData, null, 2);
   const blob = new Blob([dataStr], { type: 'application/json' });
@@ -685,6 +674,108 @@ loadPdfFromUrl = function(url) {
     }, 500);
   }
 };
+
+// Cloud save / load
+const saveCloudBtn = document.getElementById('saveCloud');
+const loadCloudBtn = document.getElementById('loadCloud');
+const cloudUrlInput = document.getElementById('cloudUrl');
+const cloudUrlRow = document.getElementById('cloudUrlRow');
+const copyCloudUrlBtn = document.getElementById('copyCloudUrl');
+const loadCloudUrlInput = document.getElementById('loadCloudUrl');
+
+function buildProjectData() {
+  return {
+    version: '2.0',
+    coordinateSpace: 'pdf',
+    pdfFilename: currentPdfFilename,
+    calibration: pxPerMeter ? pxPerMeter / scale : null,
+    polygons: polygons.map(p => ({
+      id: p.id,
+      name: p.name,
+      points: p.points.map(pt => ({ x: pt.x / scale, y: pt.y / scale })),
+      area: p.area !== null ? p.area / (scale * scale) : null,
+      color: p.color,
+      visible: p.visible,
+      workplaces: p.workplaces || 0
+    })),
+    timestamp: new Date().toISOString()
+  };
+}
+
+saveCloudBtn.addEventListener('click', async () => {
+  if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return; }
+
+  saveCloudBtn.disabled = true;
+  saveCloudBtn.textContent = 'Speichern…';
+
+  try {
+    // Upload PDF only if not already in blob storage
+    if (!currentPdfBlobUrl) {
+      if (!currentPdfBytes) throw new Error('PDF-Daten nicht verfügbar – bitte Seite neu laden');
+      const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
+      const pdfResult = await VercelBlobClient.upload(
+        `pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`,
+        pdfFile,
+        { access: 'public', handleUploadUrl: '/api/blob-upload' }
+      );
+      currentPdfBlobUrl = pdfResult.url;
+    }
+
+    // Build and upload project JSON
+    const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
+    const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
+    const projectResult = await VercelBlobClient.upload(
+      `projects/${Date.now()}-project.json`,
+      jsonFile,
+      { access: 'public', handleUploadUrl: '/api/blob-upload' }
+    );
+
+    cloudUrlInput.value = projectResult.url;
+    cloudUrlRow.hidden = false;
+    cloudUrlInput.select();
+  } catch (err) {
+    alert('Fehler beim Cloud-Speichern: ' + err.message);
+  } finally {
+    saveCloudBtn.disabled = false;
+    saveCloudBtn.textContent = '↑ In Cloud speichern';
+  }
+});
+
+copyCloudUrlBtn.addEventListener('click', () => {
+  cloudUrlInput.select();
+  navigator.clipboard.writeText(cloudUrlInput.value).catch(() => document.execCommand('copy'));
+});
+
+loadCloudBtn.addEventListener('click', async () => {
+  const url = loadCloudUrlInput.value.trim();
+  if (!url) { alert('Bitte eine Projekt-URL eingeben'); return; }
+
+  loadCloudBtn.disabled = true;
+  loadCloudBtn.textContent = 'Laden…';
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Projekt nicht gefunden');
+    const projectData = await res.json();
+    if (!projectData.polygons || !projectData.pdfBlobUrl) throw new Error('Ungültige Projekt-Datei');
+
+    // Fetch PDF bytes
+    const pdfRes = await fetch(projectData.pdfBlobUrl);
+    if (!pdfRes.ok) throw new Error('PDF nicht gefunden');
+    currentPdfBytes = await pdfRes.arrayBuffer();
+    currentPdfBlobUrl = projectData.pdfBlobUrl;
+    currentPdfFilename = projectData.pdfFilename || 'cloud-projekt.pdf';
+
+    // Restore project after PDF renders
+    window.pendingProject = projectData;
+    loadPdfFromUrl(URL.createObjectURL(new Blob([currentPdfBytes], { type: 'application/pdf' })));
+  } catch (err) {
+    alert('Fehler beim Cloud-Laden: ' + err.message);
+  } finally {
+    loadCloudBtn.disabled = false;
+    loadCloudBtn.textContent = '↓ Laden';
+  }
+});
 
 // PDF Export functionality
 exportPdfBtn.addEventListener('click', async () => {

@@ -60,12 +60,28 @@
             <span class="card-toggle" aria-hidden="true">▾</span>
           </button>
           <div class="card-body">
-            <button id="saveProject" class="btn btn-primary">Projekt speichern (.json)</button>
+            <button id="saveProject" class="btn btn-secondary">Projekt speichern (.json)</button>
             <label class="btn btn-secondary file-btn">
-              Projekt laden
+              Projekt laden (.json)
               <input id="loadProject" type="file" accept="application/json">
             </label>
             <button id="exportPdf" class="btn btn-primary">Als PDF exportieren</button>
+            <div class="card-divider"></div>
+            <button id="saveCloud" class="btn btn-primary">↑ In Cloud speichern</button>
+            <div id="cloudUrlRow" hidden>
+              <div class="field-label" style="margin-bottom:4px">Projekt-URL</div>
+              <div style="display:flex;gap:6px">
+                <input id="cloudUrl" type="text" readonly style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;background:#f9f9f9">
+                <button id="copyCloudUrl" class="btn btn-secondary" style="flex-shrink:0;font-size:12px;padding:4px 10px">Kopieren</button>
+              </div>
+            </div>
+            <div>
+              <div class="field-label" style="margin-bottom:4px">Aus Cloud laden</div>
+              <div style="display:flex;gap:6px">
+                <input id="loadCloudUrl" type="text" placeholder="Projekt-URL einfügen…" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px">
+                <button id="loadCloud" class="btn btn-secondary" style="flex-shrink:0;font-size:12px;padding:4px 10px">↓ Laden</button>
+              </div>
+            </div>
           </div>
         </section>
       </aside>
@@ -81,6 +97,7 @@
 
   <script src="vendor/pdfjs/build/pdf.js"></script>
   <script src="vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="vendor/vercel-blob-client.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

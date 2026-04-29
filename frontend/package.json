@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@vercel/blob": "^2.3.3",
+    "esbuild": "^0.28.0",
     "jspdf": "^2.5.1",
     "pdfjs-dist": "2.16.105"
   },
   "scripts": {
-    "postinstall": "mkdir -p ../static/vendor/pdfjs && cp -R node_modules/pdfjs-dist/build ../static/vendor/pdfjs && mkdir -p ../static/vendor/jspdf && cp node_modules/jspdf/dist/jspdf.umd.min.js ../static/vendor/jspdf/"
+    "postinstall": "mkdir -p ../static/vendor/pdfjs && cp -R node_modules/pdfjs-dist/build ../static/vendor/pdfjs && mkdir -p ../static/vendor/jspdf && cp node_modules/jspdf/dist/jspdf.umd.min.js ../static/vendor/jspdf/ && node_modules/.bin/esbuild blob-client-entry.js --bundle --global-name=VercelBlobClient --platform=browser --outfile=../static/vendor/vercel-blob-client.js --minify"
   }
 }
