@@ -9,6 +9,9 @@ module.exports = async function handler(req, res) {
     const contentType = req.headers['x-content-type'];
     if (!pathname) return res.status(400).json({ error: 'Missing x-pathname header' });
 
+    const allowed = ['application/pdf', 'application/json'];
+    if (!allowed.includes(contentType)) return res.status(400).json({ error: 'Content type not allowed' });
+
     const blob = await put(pathname, req, { access: 'private', contentType });
     res.json(blob);
   } catch (error) {
