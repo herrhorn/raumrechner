@@ -702,6 +702,17 @@ function buildProjectData() {
   };
 }
 
+async function blobUpload(pathname, file, contentType) {
+  const res = await fetch('/api/blob-token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ pathname, contentType }),
+  });
+  const { clientToken, error } = await res.json();
+  if (error) throw new Error(error);
+  return VercelBlobClient.put(pathname, file, { access: 'public', token: clientToken });
+}
+
 saveCloudBtn.addEventListener('click', async () => {
   if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return; }
 
@@ -713,10 +724,10 @@ saveCloudBtn.addEventListener('click', async () => {
     if (!currentPdfBlobUrl) {
       if (!currentPdfBytes) throw new Error('PDF-Daten nicht verfügbar – bitte Seite neu laden');
       const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
-      const pdfResult = await VercelBlobClient.upload(
+      const pdfResult = await blobUpload(
         `pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`,
         pdfFile,
-        { access: 'public', handleUploadUrl: '/api/blob-upload' }
+        'application/pdf'
       );
       currentPdfBlobUrl = pdfResult.url;
     }
@@ -724,10 +735,10 @@ saveCloudBtn.addEventListener('click', async () => {
     // Build and upload project JSON
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
-    const projectResult = await VercelBlobClient.upload(
+    const projectResult = await blobUpload(
       `projects/${Date.now()}-project.json`,
       jsonFile,
-      { access: 'public', handleUploadUrl: '/api/blob-upload' }
+      'application/json'
     );
 
     cloudUrlInput.value = projectResult.url;

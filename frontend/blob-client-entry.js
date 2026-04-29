@@ -1,1 +1,1 @@
-export { upload } from '@vercel/blob/client';
+export { upload, put } from '@vercel/blob/client';
