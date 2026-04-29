@@ -77,8 +77,6 @@ let panStartY = 0;
 let panScrollLeft = 0;
 let panScrollTop = 0;
 let panMoved = false;
-const pdfContainer = document.getElementById('pdfContainer');
-
 function updateCursor() {
   if (drawingMode || calibrationMode) {
     overlay.style.cursor = 'crosshair';
