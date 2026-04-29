@@ -70,6 +70,23 @@ let currentPolygon = [];
 let draggedPointIndex = null; // Index of the point being dragged
 let draggedPolygonId = null; // ID of polygon being dragged
 
+// Pan state
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let panScrollLeft = 0;
+let panScrollTop = 0;
+let panMoved = false;
+const pdfContainer = document.getElementById('pdfContainer');
+
+function updateCursor() {
+  if (drawingMode || calibrationMode) {
+    overlay.style.cursor = 'crosshair';
+  } else {
+    overlay.style.cursor = 'grab';
+  }
+}
+
 function resetOverlaySize(){
   overlay.setAttribute('width', canvas.width);
   overlay.setAttribute('height', canvas.height);
@@ -91,6 +108,7 @@ function renderPage(pdf, pageNum=1){
       renderAllPolygons();
       updatePolygonList();
       updateZoomDisplay();
+      updateCursor();
     });
   });
 }
@@ -128,9 +146,25 @@ startCal.addEventListener('click', ()=>{
   calibrationMode = true;
   calPoints = [];
   calInfo.textContent = 'Kalibrierung: Bitte 2 Punkte auf dem Grundriss klicken';
+  updateCursor();
+});
+
+overlay.addEventListener('mousedown', (ev) => {
+  if (ev.button !== 0) return;
+  if (drawingMode || calibrationMode) return;
+  if (ev.target.closest('.polypoint')) return;
+  isPanning = true;
+  panMoved = false;
+  panStartX = ev.clientX;
+  panStartY = ev.clientY;
+  panScrollLeft = pdfContainer.scrollLeft;
+  panScrollTop = pdfContainer.scrollTop;
+  overlay.style.cursor = 'grabbing';
+  ev.preventDefault();
 });
 
 overlay.addEventListener('click', (ev)=>{
+  if (panMoved) { panMoved = false; return; }
   const rect = canvas.getBoundingClientRect();
   const x = (ev.clientX - rect.left) * (canvas.width / rect.width);
   const y = (ev.clientY - rect.top) * (canvas.height / rect.height);
@@ -146,11 +180,13 @@ overlay.addEventListener('click', (ev)=>{
       if(isNaN(meters) || meters <= 0){
         alert('Ungültige Eingabe. Restart Kalibrierung.');
         calibrationMode = false;
+        updateCursor();
         calInfo.textContent = 'Keine Kalibrierung';
         return;
       }
       pxPerMeter = distPx / meters;
       calibrationMode = false;
+      updateCursor();
       calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
       removeCalibrationPoints();
       updateCalibrationButton();
@@ -166,14 +202,23 @@ overlay.addEventListener('click', (ev)=>{
   }
 });
 
-// Handle dragging of polygon points
+// Handle dragging of polygon points and panning
 overlay.addEventListener('mousemove', (ev)=>{
+  if (isPanning) {
+    const dx = ev.clientX - panStartX;
+    const dy = ev.clientY - panStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true;
+    pdfContainer.scrollLeft = panScrollLeft - dx;
+    pdfContainer.scrollTop = panScrollTop - dy;
+    return;
+  }
+
   if(draggedPointIndex === null || draggedPolygonId === null) return;
-  
+
   const rect = canvas.getBoundingClientRect();
   const x = (ev.clientX - rect.left) * (canvas.width / rect.width);
   const y = (ev.clientY - rect.top) * (canvas.height / rect.height);
-  
+
   // Update the point position in the polygon
   const poly = polygons.find(p => p.id === draggedPolygonId);
   if(poly && poly.points[draggedPointIndex]) {
@@ -183,6 +228,11 @@ overlay.addEventListener('mousemove', (ev)=>{
 });
 
 overlay.addEventListener('mouseup', ()=>{
+  if (isPanning) {
+    isPanning = false;
+    updateCursor();
+  }
+
   if(draggedPointIndex !== null && draggedPolygonId !== null){
     // Recalculate area for the dragged polygon
     const poly = polygons.find(p => p.id === draggedPolygonId);
@@ -190,10 +240,10 @@ overlay.addEventListener('mouseup', ()=>{
       poly.area = computeAreaForPoints(poly.points);
       updatePolygonList();
     }
-    
+
     draggedPointIndex = null;
     draggedPolygonId = null;
-    
+
     // Reset all point cursors
     overlay.querySelectorAll('.polypoint').forEach(pt => {
       pt.style.cursor = 'grab';
@@ -203,6 +253,11 @@ overlay.addEventListener('mouseup', ()=>{
 
 // Also handle mouse leaving the overlay
 overlay.addEventListener('mouseleave', ()=>{
+  if (isPanning) {
+    isPanning = false;
+    updateCursor();
+  }
+
   if(draggedPointIndex !== null){
     draggedPointIndex = null;
     draggedPolygonId = null;
@@ -244,6 +299,7 @@ drawPolyBtn.addEventListener('click', ()=>{
   if(!name) return;
   
   drawingMode = true;
+  updateCursor();
   finishPolyBtn.hidden = false;
   finishPolyBtn.classList.replace('btn-secondary', 'btn-primary');
   drawPolyBtn.disabled = true;
@@ -273,6 +329,7 @@ finishPolyBtn.addEventListener('click', ()=>{
   }
   
   drawingMode = false;
+  updateCursor();
   finishPolyBtn.hidden = true;
   finishPolyBtn.classList.replace('btn-primary', 'btn-secondary');
   drawPolyBtn.disabled = false;
