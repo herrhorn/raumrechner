@@ -504,7 +504,7 @@ function updatePolygonList(){
     
     item.innerHTML = `
       <div class="polygon-item-header">
-        <div class="polygon-item-name" style="color:${poly.color}">${poly.name}</div>
+        <div class="polygon-item-name"></div>
         <div class="polygon-item-actions">
           <button class="btn-rename" title="Umbenennen">✏️</button>
           <button class="btn-delete" title="Löschen">🗑️</button>
@@ -513,9 +513,13 @@ function updatePolygonList(){
       <div class="polygon-item-area">${areaText}</div>
       <div class="polygon-item-workplaces" style="margin-top:5px;display:flex;align-items:center;gap:8px;font-size:13px">
         <label style="color:#666">Arbeitsplätze:</label>
-        <input type="number" class="workplaces-input" value="${workplaces}" min="0" style="width:60px;padding:2px 5px;border:1px solid #ddd;border-radius:3px" />
+        <input type="number" class="workplaces-input" min="0" style="width:60px;padding:2px 5px;border:1px solid #ddd;border-radius:3px" />
       </div>
     `;
+    const nameEl = item.querySelector('.polygon-item-name');
+    nameEl.textContent = poly.name;
+    nameEl.style.color = poly.color;
+    item.querySelector('.workplaces-input').value = workplaces;
     
     // Click to select/deselect
     item.addEventListener('click', (e) => {
