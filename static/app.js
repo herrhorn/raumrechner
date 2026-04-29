@@ -703,14 +703,20 @@ function buildProjectData() {
 }
 
 async function blobUpload(pathname, file, contentType) {
-  const res = await fetch('/api/blob-token', {
+  const res = await fetch('/api/blob-put', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ pathname, contentType }),
+    headers: {
+      'x-pathname': pathname,
+      'x-content-type': contentType,
+      'content-type': contentType,
+    },
+    body: file,
   });
-  const { clientToken, error } = await res.json();
-  if (error) throw new Error(error);
-  return VercelBlobClient.put(pathname, file, { access: 'public', token: clientToken });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 saveCloudBtn.addEventListener('click', async () => {
