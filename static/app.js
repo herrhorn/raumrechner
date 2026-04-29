@@ -495,6 +495,7 @@ function updatePolygonList(){
       const value = parseInt(e.target.value) || 0;
       poly.workplaces = Math.max(0, value);
       e.target.value = poly.workplaces;
+      updatePolygonList();
     });
     
     polygonList.appendChild(item);
