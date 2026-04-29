@@ -771,13 +771,13 @@ loadCloudBtn.addEventListener('click', async () => {
   loadCloudBtn.textContent = 'Laden…';
 
   try {
-    const res = await fetch(url);
+    const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
     if (!res.ok) throw new Error('Projekt nicht gefunden');
     const projectData = await res.json();
     if (!projectData.polygons || !projectData.pdfBlobUrl) throw new Error('Ungültige Projekt-Datei');
 
     // Fetch PDF bytes
-    const pdfRes = await fetch(projectData.pdfBlobUrl);
+    const pdfRes = await fetch('/api/blob-get?url=' + encodeURIComponent(projectData.pdfBlobUrl));
     if (!pdfRes.ok) throw new Error('PDF nicht gefunden');
     currentPdfBytes = await pdfRes.arrayBuffer();
     currentPdfBlobUrl = projectData.pdfBlobUrl;

@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
     const contentType = req.headers['x-content-type'];
     if (!pathname) return res.status(400).json({ error: 'Missing x-pathname header' });
 
-    const blob = await put(pathname, req, { access: 'public', contentType });
+    const blob = await put(pathname, req, { access: 'private', contentType });
     res.json(blob);
   } catch (error) {
     res.status(500).json({ error: error.message });
