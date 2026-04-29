@@ -582,14 +582,15 @@ saveProjectBtn.addEventListener('click', () => {
   }
   
   const projectData = {
-    version: '1.0',
+    version: '2.0',
+    coordinateSpace: 'pdf',
     pdfFilename: currentPdfFilename,
-    calibration: pxPerMeter,
+    calibration: pxPerMeter ? pxPerMeter / scale : null,
     polygons: polygons.map(p => ({
       id: p.id,
       name: p.name,
-      points: p.points,
-      area: p.area,
+      points: p.points.map(pt => ({ x: pt.x / scale, y: pt.y / scale })),
+      area: p.area !== null ? p.area / (scale * scale) : null,
       color: p.color,
       visible: p.visible,
       workplaces: p.workplaces || 0
@@ -656,15 +657,21 @@ loadPdfFromUrl = function(url) {
     setTimeout(() => {
       const projectData = window.pendingProject;
       
-      // Restore calibration
-      pxPerMeter = projectData.calibration;
+      // Restore calibration and polygons, scaling from PDF-space if needed
+      const inPdfSpace = projectData.coordinateSpace === 'pdf';
+      const s = inPdfSpace ? scale : 1;
+
+      pxPerMeter = projectData.calibration ? projectData.calibration * s : null;
       if(pxPerMeter) {
         calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
       }
       updateCalibrationButton();
-      
-      // Restore polygons
-      polygons = projectData.polygons || [];
+
+      polygons = (projectData.polygons || []).map(p => ({
+        ...p,
+        points: p.points.map(pt => ({ x: pt.x * s, y: pt.y * s })),
+        area: p.area !== null ? p.area * s * s : null,
+      }));
       nextPolygonId = Math.max(...polygons.map(p => p.id), 0) + 1;
       
       // Re-render
