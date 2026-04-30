@@ -37,8 +37,6 @@ const finishPolyBtn = document.getElementById('finishPoly');
 const polygonList = document.getElementById('polygonList');
 const currentPolyName = document.getElementById('currentPolyName');
 const exportPdfBtn = document.getElementById('exportPdf');
-const saveProjectBtn = document.getElementById('saveProject');
-const loadProjectInput = document.getElementById('loadProject');
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
 const zoomResetBtn = document.getElementById('zoomReset');
@@ -582,62 +580,6 @@ function updatePolygonList(){
   }
 }
 
-// Project Save/Load functionality
-saveProjectBtn.addEventListener('click', () => {
-  if(!pdfDoc) {
-    alert('Bitte lade zuerst einen Grundriss');
-    return;
-  }
-  
-  const projectData = buildProjectData();
-  
-  const dataStr = JSON.stringify(projectData, null, 2);
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  const projectName = currentPdfFilename ? currentPdfFilename.replace('.pdf', '') : 'projekt';
-  a.download = `${projectName}-projekt.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
-
-loadProjectInput.addEventListener('change', async (e) => {
-  const f = e.target.files[0];
-  if(!f) return;
-  
-  try {
-    const text = await f.text();
-    const projectData = JSON.parse(text);
-    
-    // Validate project data
-    if(!projectData.version || !projectData.polygons) {
-      alert('Ungültige Projekt-Datei');
-      return;
-    }
-    
-    // Ask user to upload the PDF
-    const pdfName = projectData.pdfFilename || 'das PDF';
-    const loadPdf = confirm(`Projekt geladen. Bitte lade jetzt die zugehörige PDF-Datei "${pdfName}" hoch.\n\nKlicke OK und wähle dann die PDF-Datei aus.`);
-    
-    if(!loadPdf) return;
-    
-    // Store project data temporarily
-    window.pendingProject = projectData;
-    
-    // Trigger PDF file input
-    fileInput.click();
-    
-  } catch(err) {
-    alert('Fehler beim Laden der Projekt-Datei: ' + err.message);
-  }
-  
-  // Reset input
-  e.target.value = '';
-});
 
 // Hook into PDF loading to restore project data
 const originalLoadPdfFromUrl = loadPdfFromUrl;
@@ -681,11 +623,11 @@ loadPdfFromUrl = function(url) {
 
 // Cloud save / load
 const saveCloudBtn = document.getElementById('saveCloud');
-const loadCloudBtn = document.getElementById('loadCloud');
 const cloudUrlInput = document.getElementById('cloudUrl');
 const cloudUrlRow = document.getElementById('cloudUrlRow');
 const copyCloudUrlBtn = document.getElementById('copyCloudUrl');
-const loadCloudUrlInput = document.getElementById('loadCloudUrl');
+const projectListEl = document.getElementById('projectList');
+const refreshProjectsBtn = document.getElementById('refreshProjects');
 
 function buildProjectData() {
   return {
@@ -742,18 +684,19 @@ saveCloudBtn.addEventListener('click', async () => {
       currentPdfBlobUrl = pdfResult.url;
     }
 
-    // Build and upload project JSON
+    // Build and upload project JSON — encode PDF name in pathname for list display
+    const safeName = (currentPdfFilename || 'projekt').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
     const projectResult = await blobUpload(
-      `projects/${Date.now()}-project.json`,
+      `projects/${Date.now()}-${safeName}.json`,
       jsonFile,
       'application/json'
     );
 
     cloudUrlInput.value = projectResult.url;
     cloudUrlRow.hidden = false;
-    cloudUrlInput.select();
+    loadProjectList();
   } catch (err) {
     alert('Fehler beim Cloud-Speichern: ' + err.message);
   } finally {
@@ -767,36 +710,73 @@ copyCloudUrlBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(cloudUrlInput.value).catch(() => document.execCommand('copy'));
 });
 
-loadCloudBtn.addEventListener('click', async () => {
-  const url = loadCloudUrlInput.value.trim();
-  if (!url) { alert('Bitte eine Projekt-URL eingeben'); return; }
-
-  loadCloudBtn.disabled = true;
-  loadCloudBtn.textContent = 'Laden…';
-
+async function loadProjectFromUrl(url) {
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
     if (!res.ok) throw new Error('Projekt nicht gefunden');
     const projectData = await res.json();
     if (!projectData.polygons || !projectData.pdfBlobUrl) throw new Error('Ungültige Projekt-Datei');
 
-    // Fetch PDF bytes
     const pdfRes = await fetch('/api/blob-get?url=' + encodeURIComponent(projectData.pdfBlobUrl));
     if (!pdfRes.ok) throw new Error('PDF nicht gefunden');
     currentPdfBytes = await pdfRes.arrayBuffer();
     currentPdfBlobUrl = projectData.pdfBlobUrl;
     currentPdfFilename = projectData.pdfFilename || 'cloud-projekt.pdf';
 
-    // Restore project after PDF renders
     window.pendingProject = projectData;
     loadPdfFromUrl(URL.createObjectURL(new Blob([currentPdfBytes], { type: 'application/pdf' })));
   } catch (err) {
     alert('Fehler beim Cloud-Laden: ' + err.message);
-  } finally {
-    loadCloudBtn.disabled = false;
-    loadCloudBtn.textContent = '↓ Laden';
   }
-});
+}
+
+async function loadProjectList() {
+  projectListEl.textContent = 'Laden…';
+  projectListEl.style.color = '#999';
+  try {
+    const res = await fetch('/api/blob-list');
+    if (!res.ok) throw new Error('Fehler beim Abrufen');
+    const blobs = await res.json();
+
+    if (blobs.length === 0) {
+      projectListEl.textContent = 'Keine gespeicherten Projekte';
+      return;
+    }
+
+    projectListEl.innerHTML = '';
+    projectListEl.style.color = '';
+    blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    blobs.forEach(blob => {
+      const match = blob.pathname.match(/projects\/\d+-(.+)\.json$/);
+      const name = match ? match[1].replace(/-/g, ' ') : blob.pathname;
+      const date = new Date(blob.uploadedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:4px;cursor:pointer;border:1px solid #e8e8e8;margin-bottom:4px';
+      row.addEventListener('mouseenter', () => row.style.background = '#f0f4ff');
+      row.addEventListener('mouseleave', () => row.style.background = '');
+
+      const nameEl = document.createElement('span');
+      nameEl.textContent = name;
+      nameEl.style.cssText = 'font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+
+      const dateEl = document.createElement('span');
+      dateEl.textContent = date;
+      dateEl.style.cssText = 'color:#999;flex-shrink:0;margin-left:8px';
+
+      row.appendChild(nameEl);
+      row.appendChild(dateEl);
+      row.addEventListener('click', () => loadProjectFromUrl(blob.url));
+      projectListEl.appendChild(row);
+    });
+  } catch (err) {
+    projectListEl.textContent = 'Fehler: ' + err.message;
+    projectListEl.style.color = '#c00';
+  }
+}
+
+refreshProjectsBtn.addEventListener('click', loadProjectList);
+loadProjectList();
 
 // PDF Export functionality
 exportPdfBtn.addEventListener('click', async () => {
