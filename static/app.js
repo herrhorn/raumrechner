@@ -755,6 +755,9 @@ async function deleteProject(blob, name) {
       body: JSON.stringify({ url: blob.url }),
     });
     if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+    if (blob.pathname === currentProjectBlobPathname) {
+      currentProjectBlobPathname = null;
+    }
     loadProjectList();
   } catch (err) {
     alert('Fehler beim Löschen: ' + err.message);
