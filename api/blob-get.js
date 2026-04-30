@@ -8,6 +8,9 @@ module.exports = async function handler(req, res) {
   if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.blob.vercel-storage.com')) {
     return res.status(400).json({ error: 'URL not allowed' });
   }
+  if (!parsed.pathname.startsWith('/projects/') && !parsed.pathname.startsWith('/pdfs/')) {
+    return res.status(400).json({ error: 'URL not allowed' });
+  }
 
   try {
     const upstream = await fetch(url, {
@@ -15,6 +18,7 @@ module.exports = async function handler(req, res) {
     });
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'Blob not found' });
     res.setHeader('content-type', upstream.headers.get('content-type') || 'application/octet-stream');
+    res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('cache-control', 'private, max-age=3600');
     const data = await upstream.arrayBuffer();
     res.send(Buffer.from(data));
