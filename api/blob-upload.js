@@ -9,6 +9,7 @@ module.exports = async function handler(req, res) {
         allowedContentTypes: ['application/pdf', 'application/json'],
         access: 'private',
         maximumSizeInBytes: 100 * 1024 * 1024,
+        allowOverwrite: true,
       }),
       onUploadCompleted: async () => {},
     });
