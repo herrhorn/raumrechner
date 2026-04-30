@@ -730,6 +730,51 @@ async function loadProjectFromUrl(url) {
   }
 }
 
+async function renameProject(blob, currentName) {
+  const newName = prompt('Neuer Projektname:', currentName);
+  if (!newName || newName === currentName) return;
+
+  try {
+    const res = await fetch('/api/blob-get?url=' + encodeURIComponent(blob.url));
+    if (!res.ok) throw new Error('Projekt nicht abrufbar');
+    const content = await res.text();
+
+    const match = blob.pathname.match(/projects\/(\d+)-/);
+    const timestamp = match ? match[1] : Date.now();
+    const safeName = newName.replace(/[^a-zA-Z0-9_\-]/g, '-');
+    const putRes = await fetch('/api/blob-put', {
+      method: 'POST',
+      headers: { 'x-pathname': `projects/${timestamp}-${safeName}.json`, 'x-content-type': 'application/json', 'content-type': 'application/json' },
+      body: content,
+    });
+    if (!putRes.ok) throw new Error('Umbenennen fehlgeschlagen');
+
+    await fetch('/api/blob-delete', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: blob.url }),
+    });
+    loadProjectList();
+  } catch (err) {
+    alert('Fehler beim Umbenennen: ' + err.message);
+  }
+}
+
+async function deleteProject(blob, name) {
+  if (!confirm(`"${name}" löschen?`)) return;
+  try {
+    const res = await fetch('/api/blob-delete', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: blob.url }),
+    });
+    if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+    loadProjectList();
+  } catch (err) {
+    alert('Fehler beim Löschen: ' + err.message);
+  }
+}
+
 async function loadProjectList() {
   projectListEl.textContent = 'Laden…';
   projectListEl.style.color = '#999';
@@ -747,26 +792,45 @@ async function loadProjectList() {
     projectListEl.style.color = '';
     blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     blobs.forEach(blob => {
-      const match = blob.pathname.match(/projects\/\d+-(.+)\.json$/);
-      const name = match ? match[1].replace(/-/g, ' ') : blob.pathname;
+      const match = blob.pathname.match(/projects\/(\d+)-(.+)\.json$/);
+      const name = match ? match[2].replace(/-/g, ' ') : blob.pathname;
       const date = new Date(blob.uploadedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:4px;cursor:pointer;border:1px solid #e8e8e8;margin-bottom:4px';
+      row.style.cssText = 'display:flex;align-items:center;padding:6px 8px;border-radius:4px;border:1px solid #e8e8e8;margin-bottom:4px;gap:6px';
       row.addEventListener('mouseenter', () => row.style.background = '#f0f4ff');
       row.addEventListener('mouseleave', () => row.style.background = '');
 
-      const nameEl = document.createElement('span');
+      const info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0;cursor:pointer';
+      info.addEventListener('click', () => loadProjectFromUrl(blob.url));
+
+      const nameEl = document.createElement('div');
       nameEl.textContent = name;
       nameEl.style.cssText = 'font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
-      const dateEl = document.createElement('span');
+      const dateEl = document.createElement('div');
       dateEl.textContent = date;
-      dateEl.style.cssText = 'color:#999;flex-shrink:0;margin-left:8px';
+      dateEl.style.cssText = 'color:#999;font-size:11px';
 
-      row.appendChild(nameEl);
-      row.appendChild(dateEl);
-      row.addEventListener('click', () => loadProjectFromUrl(blob.url));
+      info.appendChild(nameEl);
+      info.appendChild(dateEl);
+
+      const renameBtn = document.createElement('button');
+      renameBtn.textContent = '✏️';
+      renameBtn.title = 'Umbenennen';
+      renameBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 4px;font-size:13px;flex-shrink:0';
+      renameBtn.addEventListener('click', () => renameProject(blob, name));
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '🗑️';
+      deleteBtn.title = 'Löschen';
+      deleteBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 4px;font-size:13px;flex-shrink:0';
+      deleteBtn.addEventListener('click', () => deleteProject(blob, name));
+
+      row.appendChild(info);
+      row.appendChild(renameBtn);
+      row.appendChild(deleteBtn);
       projectListEl.appendChild(row);
     });
   } catch (err) {
