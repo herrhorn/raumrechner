@@ -723,9 +723,10 @@ async function renameProject(blob, currentName) {
     const match = blob.pathname.match(/projects\/(\d+)-/);
     const timestamp = match ? match[1] : Date.now();
     const safeName = newName.replace(/[^a-zA-Z0-9_\-]/g, '-');
+    const newPathname = `projects/${timestamp}-${safeName}.json`;
     const putRes = await fetch('/api/blob-put', {
       method: 'POST',
-      headers: { 'x-pathname': `projects/${timestamp}-${safeName}.json`, 'x-content-type': 'application/json', 'content-type': 'application/json' },
+      headers: { 'x-pathname': newPathname, 'x-content-type': 'application/json', 'content-type': 'application/json' },
       body: content,
     });
     if (!putRes.ok) throw new Error('Umbenennen fehlgeschlagen');
@@ -735,6 +736,10 @@ async function renameProject(blob, currentName) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url: blob.url }),
     });
+
+    if (blob.pathname === currentProjectBlobPathname) {
+      currentProjectBlobPathname = newPathname;
+    }
     loadProjectList();
   } catch (err) {
     alert('Fehler beim Umbenennen: ' + err.message);
