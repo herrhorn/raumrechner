@@ -647,21 +647,11 @@ function buildProjectData() {
   };
 }
 
-async function blobUpload(pathname, file, contentType) {
-  const res = await fetch('/api/blob-put', {
-    method: 'POST',
-    headers: {
-      'x-pathname': pathname,
-      'x-content-type': contentType,
-      'content-type': contentType,
-    },
-    body: file,
+async function blobUpload(pathname, file) {
+  return VercelBlobClient.upload(pathname, file, {
+    access: 'private',
+    handleUploadUrl: '/api/blob-upload',
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Upload failed: ${res.status}`);
-  }
-  return res.json();
 }
 
 saveCloudBtn.addEventListener('click', async () => {
@@ -677,8 +667,7 @@ saveCloudBtn.addEventListener('click', async () => {
       const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
       const pdfResult = await blobUpload(
         `pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`,
-        pdfFile,
-        'application/pdf'
+        pdfFile
       );
       currentPdfBlobUrl = pdfResult.url;
     }
@@ -690,7 +679,7 @@ saveCloudBtn.addEventListener('click', async () => {
     }
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
-    await blobUpload(currentProjectBlobPathname, jsonFile, 'application/json');
+    await blobUpload(currentProjectBlobPathname, jsonFile);
 
     loadProjectList();
   } catch (err) {
