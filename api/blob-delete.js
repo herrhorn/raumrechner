@@ -10,6 +10,9 @@ module.exports = async function handler(req, res) {
   if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.blob.vercel-storage.com')) {
     return res.status(400).json({ error: 'URL not allowed' });
   }
+  if (!parsed.pathname.startsWith('/projects/')) {
+    return res.status(400).json({ error: 'URL not allowed' });
+  }
 
   try {
     await del(url);

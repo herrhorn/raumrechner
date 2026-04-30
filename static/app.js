@@ -41,6 +41,7 @@ const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
 const zoomResetBtn = document.getElementById('zoomReset');
 const zoomLevelSpan = document.getElementById('zoomLevel');
+const pdfContainer = document.getElementById('pdfContainer');
 
 let pdfDoc = null;
 let scale = 1; // render scale for PDF.js
@@ -48,8 +49,6 @@ let fitScale = 1; // scale that fits the container width
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 0.25;
-let pageWidthPx = 0; // width of canvas in pixels
-let pageHeightPx = 0;
 let currentPdfFilename = null;
 let currentPdfBytes = null;
 let currentPdfBlobUrl = null;
@@ -100,8 +99,6 @@ function renderPage(pdf, pageNum=1){
     const viewport = page.getViewport({scale});
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    pageWidthPx = viewport.width;
-    pageHeightPx = viewport.height;
     const renderContext = {canvasContext: ctx, viewport};
     page.render(renderContext).promise.then(()=>{
       resetOverlaySize();
@@ -200,7 +197,6 @@ overlay.addEventListener('click', (ev)=>{
   }
 
   if(drawingMode){
-    // add point to polygon (in pixel coordinates relative to canvas)
     currentPolygon.push({x,y});
     renderAllPolygons();
   }
@@ -223,7 +219,6 @@ overlay.addEventListener('mousemove', (ev)=>{
   const x = (ev.clientX - rect.left) * (canvas.width / rect.width);
   const y = (ev.clientY - rect.top) * (canvas.height / rect.height);
 
-  // Update the point position in the polygon
   const poly = polygons.find(p => p.id === draggedPolygonId);
   if(poly && poly.points[draggedPointIndex]) {
     poly.points[draggedPointIndex] = {x, y};
@@ -263,9 +258,14 @@ overlay.addEventListener('mouseleave', ()=>{
   }
 
   if(draggedPointIndex !== null){
+    const poly = polygons.find(p => p.id === draggedPolygonId);
+    if(poly) {
+      poly.area = computeAreaForPoints(poly.points);
+      updatePolygonList();
+      isDirty = true;
+    }
     draggedPointIndex = null;
     draggedPolygonId = null;
-    // Reset all point cursors
     overlay.querySelectorAll('.polypoint').forEach(pt => {
       pt.style.cursor = 'grab';
     });
@@ -374,7 +374,6 @@ function computeAreaForPoints(pts){
 }
 
 function recalculateAllAreas(){
-  // Recalculate area for all polygons with the current calibration
   polygons.forEach(poly => {
     if(poly.points.length >= 3) {
       poly.area = computeAreaForPoints(poly.points);
@@ -391,11 +390,9 @@ function clearOverlayDrawings(){
 function renderAllPolygons(){
   clearOverlayDrawings();
   
-  // Render saved polygons
   polygons.forEach(poly => {
     if(!poly.visible || poly.points.length === 0) return;
-    
-    // Draw polygon shape
+
     const shape = document.createElementNS('http://www.w3.org/2000/svg','polygon');
     const points = poly.points.map(p=>`${p.x},${p.y}`).join(' ');
     shape.setAttribute('points', points);
@@ -405,8 +402,7 @@ function renderAllPolygons(){
     shape.setAttribute('data-poly-id', poly.id);
     shape.style.pointerEvents = 'none';
     overlay.appendChild(shape);
-    
-    // Draw vertex points
+
     poly.points.forEach((pt, idx) => {
       const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
       circle.setAttribute('cx', pt.x);
@@ -448,14 +444,12 @@ function renderAllPolygons(){
     });
   });
   
-  // Render current polygon being drawn
   if(drawingMode && currentPolygon.length > 0) {
     redrawCurrentPolygon();
   }
 }
 
 function redrawCurrentPolygon(){
-  // Don't clear all - just update current drawing
   const existing = overlay.querySelector('.current-drawing');
   if(existing) existing.remove();
   const existingPoints = overlay.querySelectorAll('.current-point');
@@ -589,18 +583,12 @@ function updatePolygonList(){
 }
 
 
-// Hook into PDF loading to restore project data
 const originalLoadPdfFromUrl = loadPdfFromUrl;
 loadPdfFromUrl = function(url) {
   originalLoadPdfFromUrl(url);
-  
-  // Check if there's a pending project to restore
   if(window.pendingProject) {
-    // Wait for PDF to render, then restore project
     setTimeout(() => {
       const projectData = window.pendingProject;
-      
-      // Restore calibration and polygons, scaling from PDF-space if needed
       const inPdfSpace = projectData.coordinateSpace === 'pdf';
       const s = inPdfSpace ? scale : 1;
 
@@ -616,11 +604,8 @@ loadPdfFromUrl = function(url) {
         area: p.area !== null ? p.area * s * s : null,
       }));
       nextPolygonId = Math.max(...polygons.map(p => p.id), 0) + 1;
-      
-      // Re-render
       renderAllPolygons();
       updatePolygonList();
-      
       isDirty = false;
       delete window.pendingProject;
       setProjectListLoading(false);
@@ -630,7 +615,6 @@ loadPdfFromUrl = function(url) {
   }
 };
 
-// Cloud save / load
 const saveCloudBtn = document.getElementById('saveCloud');
 const projectListEl = document.getElementById('projectList');
 
@@ -1091,8 +1075,6 @@ zoomResetBtn.addEventListener('click', () => {
   renderPage(pdfDoc, 1);
 });
 
-// Mousewheel zoom support
-const pdfContainer = document.getElementById('pdfContainer');
 pdfContainer.addEventListener('wheel', (e) => {
   if(!pdfDoc) return;
 
@@ -1108,7 +1090,3 @@ pdfContainer.addEventListener('wheel', (e) => {
   }
 }, { passive: false });
 
-// Responsive: if window resizes, we should keep canvas visible size; we render at native pixel sizes from PDF.js
-window.addEventListener('resize', ()=>{
-  // nothing complex here; PDF.js would need re-render for different scale; we keep current rendering
-});
