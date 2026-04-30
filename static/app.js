@@ -54,6 +54,7 @@ let currentPdfFilename = null;
 let currentPdfBytes = null;
 let currentPdfBlobUrl = null;
 let currentProjectBlobPathname = null;
+let isDirty = false;
 
 // Calibration state
 let calibrationMode = false;
@@ -193,6 +194,7 @@ overlay.addEventListener('click', (ev)=>{
       removeCalibrationPoints();
       updateCalibrationButton();
       recalculateAllAreas();
+      isDirty = true;
     }
     return;
   }
@@ -236,12 +238,12 @@ overlay.addEventListener('mouseup', ()=>{
   }
 
   if(draggedPointIndex !== null && draggedPolygonId !== null){
-    // Recalculate area for the dragged polygon
     const poly = polygons.find(p => p.id === draggedPolygonId);
     if(poly) {
       poly.area = computeAreaForPoints(poly.points);
       updatePolygonList();
     }
+    isDirty = true;
 
     draggedPointIndex = null;
     draggedPolygonId = null;
@@ -349,6 +351,7 @@ finishPolyBtn.addEventListener('click', ()=>{
   
   renderAllPolygons();
   updatePolygonList();
+  isDirty = true;
 });
 
 
@@ -535,6 +538,7 @@ function updatePolygonList(){
       const newName = prompt('Neuer Name:', poly.name);
       if(newName) {
         poly.name = newName;
+        isDirty = true;
         updatePolygonList();
       }
     });
@@ -544,6 +548,7 @@ function updatePolygonList(){
       e.stopPropagation();
       if(confirm(`"${poly.name}" löschen?`)) {
         polygons = polygons.filter(p => p.id !== poly.id);
+        isDirty = true;
         renderAllPolygons();
         updatePolygonList();
       }
@@ -558,6 +563,7 @@ function updatePolygonList(){
       const value = parseInt(e.target.value) || 0;
       poly.workplaces = Math.max(0, value);
       e.target.value = poly.workplaces;
+      isDirty = true;
       updatePolygonList();
     });
     
@@ -615,10 +621,9 @@ loadPdfFromUrl = function(url) {
       renderAllPolygons();
       updatePolygonList();
       
-      // Clear pending project
+      isDirty = false;
       delete window.pendingProject;
-      
-      alert('Projekt erfolgreich geladen!');
+      loadProjectList();
     }, 500);
   }
 };
@@ -654,25 +659,17 @@ async function blobUpload(pathname, file) {
   });
 }
 
-saveCloudBtn.addEventListener('click', async () => {
-  if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return; }
-
+async function saveProject() {
+  if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return false; }
   saveCloudBtn.disabled = true;
   saveCloudBtn.textContent = 'Speichern…';
-
   try {
-    // Upload PDF only if not already in blob storage
     if (!currentPdfBlobUrl) {
       if (!currentPdfBytes) throw new Error('PDF-Daten nicht verfügbar – bitte Seite neu laden');
       const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
-      const pdfResult = await blobUpload(
-        `pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`,
-        pdfFile
-      );
+      const pdfResult = await blobUpload(`pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`, pdfFile);
       currentPdfBlobUrl = pdfResult.url;
     }
-
-    // Build and upload project JSON — overwrite existing pathname or create new one
     if (!currentProjectBlobPathname) {
       const safeName = (currentPdfFilename || 'projekt').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
       currentProjectBlobPathname = `projects/${Date.now()}-${safeName}.json`;
@@ -680,17 +677,28 @@ saveCloudBtn.addEventListener('click', async () => {
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
     await blobUpload(currentProjectBlobPathname, jsonFile);
-
+    isDirty = false;
     loadProjectList();
+    return true;
   } catch (err) {
     alert('Fehler beim Cloud-Speichern: ' + err.message);
+    return false;
   } finally {
     saveCloudBtn.disabled = false;
     saveCloudBtn.textContent = '↑ Save project';
   }
-});
+}
+
+saveCloudBtn.addEventListener('click', () => saveProject());
 
 async function loadProjectFromUrl(url, pathname) {
+  if (isDirty && currentProjectBlobPathname) {
+    const wantSave = confirm('Das aktuelle Projekt hat ungespeicherte Änderungen.\n\nJetzt speichern?');
+    if (wantSave) {
+      const saved = await saveProject();
+      if (!saved) return;
+    }
+  }
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
     if (!res.ok) throw new Error('Projekt nicht gefunden');
@@ -785,10 +793,11 @@ async function loadProjectList() {
       const name = match ? match[2].replace(/-/g, ' ') : blob.pathname;
       const date = new Date(blob.uploadedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+      const isActive = blob.pathname === currentProjectBlobPathname;
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;padding:6px 8px;border-radius:4px;border:1px solid #e8e8e8;margin-bottom:4px;gap:6px';
-      row.addEventListener('mouseenter', () => row.style.background = '#f0f4ff');
-      row.addEventListener('mouseleave', () => row.style.background = '');
+      row.style.cssText = `display:flex;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;gap:6px;border:${isActive ? '2px solid #4a90e2;background:#f0f4ff' : '1px solid #e8e8e8'}`;
+      row.addEventListener('mouseenter', () => { if (!isActive) row.style.background = '#f0f4ff'; });
+      row.addEventListener('mouseleave', () => { if (!isActive) row.style.background = ''; });
 
       const info = document.createElement('div');
       info.style.cssText = 'flex:1;min-width:0;cursor:pointer';
@@ -796,7 +805,7 @@ async function loadProjectList() {
 
       const nameEl = document.createElement('div');
       nameEl.textContent = name;
-      nameEl.style.cssText = 'font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      nameEl.style.cssText = `font-weight:${isActive ? '700' : '500'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`;
 
       const dateEl = document.createElement('div');
       dateEl.textContent = date;
