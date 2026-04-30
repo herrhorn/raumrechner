@@ -623,6 +623,8 @@ loadPdfFromUrl = function(url) {
       
       isDirty = false;
       delete window.pendingProject;
+      setProjectListLoading(false);
+      saveCloudBtn.disabled = false;
       loadProjectList();
     }, 500);
   }
@@ -659,10 +661,16 @@ async function blobUpload(pathname, file) {
   });
 }
 
+function setProjectListLoading(loading) {
+  projectListEl.style.opacity = loading ? '0.5' : '';
+  projectListEl.style.pointerEvents = loading ? 'none' : '';
+}
+
 async function saveProject() {
   if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return false; }
   saveCloudBtn.disabled = true;
   saveCloudBtn.textContent = 'Speichern…';
+  setProjectListLoading(true);
   try {
     if (!currentPdfBlobUrl) {
       if (!currentPdfBytes) throw new Error('PDF-Daten nicht verfügbar – bitte Seite neu laden');
@@ -678,6 +686,8 @@ async function saveProject() {
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
     await blobUpload(currentProjectBlobPathname, jsonFile);
     isDirty = false;
+    saveCloudBtn.textContent = '✓ Gespeichert';
+    setTimeout(() => { saveCloudBtn.textContent = '↑ Save project'; }, 2000);
     loadProjectList();
     return true;
   } catch (err) {
@@ -685,7 +695,8 @@ async function saveProject() {
     return false;
   } finally {
     saveCloudBtn.disabled = false;
-    saveCloudBtn.textContent = '↑ Save project';
+    if (saveCloudBtn.textContent === 'Speichern…') saveCloudBtn.textContent = '↑ Save project';
+    setProjectListLoading(false);
   }
 }
 
@@ -699,6 +710,8 @@ async function loadProjectFromUrl(url, pathname) {
       if (!saved) return;
     }
   }
+  setProjectListLoading(true);
+  saveCloudBtn.disabled = true;
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
     if (!res.ok) throw new Error('Projekt nicht gefunden');
@@ -716,6 +729,8 @@ async function loadProjectFromUrl(url, pathname) {
     loadPdfFromUrl(URL.createObjectURL(new Blob([currentPdfBytes], { type: 'application/pdf' })));
   } catch (err) {
     alert('Fehler beim Cloud-Laden: ' + err.message);
+    setProjectListLoading(false);
+    saveCloudBtn.disabled = false;
   }
 }
 
