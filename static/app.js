@@ -51,8 +51,9 @@ const SCALE_STEP = 0.25;
 let pageWidthPx = 0; // width of canvas in pixels
 let pageHeightPx = 0;
 let currentPdfFilename = null;
-let currentPdfBytes = null;   // original PDF ArrayBuffer for cloud upload
-let currentPdfBlobUrl = null; // Vercel Blob URL if PDF is already in cloud
+let currentPdfBytes = null;
+let currentPdfBlobUrl = null;
+let currentProjectBlobPathname = null;
 
 // Calibration state
 let calibrationMode = false;
@@ -137,6 +138,7 @@ fileInput.addEventListener('change', (e) => {
   if (!f) return;
   currentPdfFilename = f.name;
   currentPdfBlobUrl = null;
+  currentProjectBlobPathname = null;
   f.arrayBuffer().then(buf => { currentPdfBytes = buf; });
   loadPdfFromUrl(URL.createObjectURL(f));
 });
@@ -623,9 +625,6 @@ loadPdfFromUrl = function(url) {
 
 // Cloud save / load
 const saveCloudBtn = document.getElementById('saveCloud');
-const cloudUrlInput = document.getElementById('cloudUrl');
-const cloudUrlRow = document.getElementById('cloudUrlRow');
-const copyCloudUrlBtn = document.getElementById('copyCloudUrl');
 const projectListEl = document.getElementById('projectList');
 const refreshProjectsBtn = document.getElementById('refreshProjects');
 
@@ -684,33 +683,25 @@ saveCloudBtn.addEventListener('click', async () => {
       currentPdfBlobUrl = pdfResult.url;
     }
 
-    // Build and upload project JSON — encode PDF name in pathname for list display
-    const safeName = (currentPdfFilename || 'projekt').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
+    // Build and upload project JSON — overwrite existing pathname or create new one
+    if (!currentProjectBlobPathname) {
+      const safeName = (currentPdfFilename || 'projekt').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
+      currentProjectBlobPathname = `projects/${Date.now()}-${safeName}.json`;
+    }
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
-    const projectResult = await blobUpload(
-      `projects/${Date.now()}-${safeName}.json`,
-      jsonFile,
-      'application/json'
-    );
+    await blobUpload(currentProjectBlobPathname, jsonFile, 'application/json');
 
-    cloudUrlInput.value = projectResult.url;
-    cloudUrlRow.hidden = false;
     loadProjectList();
   } catch (err) {
     alert('Fehler beim Cloud-Speichern: ' + err.message);
   } finally {
     saveCloudBtn.disabled = false;
-    saveCloudBtn.textContent = '↑ In Cloud speichern';
+    saveCloudBtn.textContent = '↑ Save project';
   }
 });
 
-copyCloudUrlBtn.addEventListener('click', () => {
-  cloudUrlInput.select();
-  navigator.clipboard.writeText(cloudUrlInput.value).catch(() => document.execCommand('copy'));
-});
-
-async function loadProjectFromUrl(url) {
+async function loadProjectFromUrl(url, pathname) {
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
     if (!res.ok) throw new Error('Projekt nicht gefunden');
@@ -722,6 +713,7 @@ async function loadProjectFromUrl(url) {
     currentPdfBytes = await pdfRes.arrayBuffer();
     currentPdfBlobUrl = projectData.pdfBlobUrl;
     currentPdfFilename = projectData.pdfFilename || 'cloud-projekt.pdf';
+    currentProjectBlobPathname = pathname || null;
 
     window.pendingProject = projectData;
     loadPdfFromUrl(URL.createObjectURL(new Blob([currentPdfBytes], { type: 'application/pdf' })));
@@ -803,7 +795,7 @@ async function loadProjectList() {
 
       const info = document.createElement('div');
       info.style.cssText = 'flex:1;min-width:0;cursor:pointer';
-      info.addEventListener('click', () => loadProjectFromUrl(blob.url));
+      info.addEventListener('click', () => loadProjectFromUrl(blob.url, blob.pathname));
 
       const nameEl = document.createElement('div');
       nameEl.textContent = name;
