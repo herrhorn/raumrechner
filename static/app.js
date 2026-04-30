@@ -631,7 +631,7 @@ loadPdfFromUrl = function(url) {
 // Cloud save / load
 const saveCloudBtn = document.getElementById('saveCloud');
 const projectListEl = document.getElementById('projectList');
-const refreshProjectsBtn = document.getElementById('refreshProjects');
+
 
 function buildProjectData() {
   return {
@@ -837,7 +837,6 @@ async function loadProjectList() {
   }
 }
 
-refreshProjectsBtn.addEventListener('click', loadProjectList);
 loadProjectList();
 
 // PDF Export functionality
