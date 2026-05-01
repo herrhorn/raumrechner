@@ -14,7 +14,10 @@ document.querySelectorAll('.card-header').forEach(header => {
 
 function updateCalibrationButton() {
   startCal.classList.remove('btn-secondary', 'btn-danger', 'btn-success');
-  if (pxPerMeter) {
+  if (calibrationMode && pxPerMeter) {
+    startCal.classList.add('btn-danger');
+    startCal.textContent = 'Recalibrating …';
+  } else if (pxPerMeter) {
     startCal.classList.add('btn-success');
     startCal.textContent = '✓ Calibrated';
   } else if (pdfDoc) {
@@ -147,6 +150,7 @@ startCal.addEventListener('click', ()=>{
   calPoints = [];
   calInfo.textContent = 'Click two points on the plan';
   updateCursor();
+  updateCalibrationButton();
 });
 
 overlay.addEventListener('mousedown', (ev) => {
@@ -173,18 +177,21 @@ overlay.addEventListener('click', (ev)=>{
     calPoints.push({x,y});
     drawCalibrationPoint(x,y);
     if(calPoints.length === 2){
+      drawCalibrationLine(calPoints[0], calPoints[1]);
       const dx = calPoints[0].x - calPoints[1].x;
       const dy = calPoints[0].y - calPoints[1].y;
       const distPx = Math.sqrt(dx*dx + dy*dy);
-      // Defer prompt so the browser paints the second point before the modal blocks rendering
+      // Defer prompt so the browser paints the second point + line before the modal blocks rendering
       setTimeout(() => {
+        const prevPxPerMeter = pxPerMeter;
         const meters = parseFloat(prompt('Enter the real length of this line in meters (e.g. 5)'));
         if(isNaN(meters) || meters <= 0){
           alert('Invalid input. Restart calibration.');
           calibrationMode = false;
           updateCursor();
-          calInfo.textContent = 'Not calibrated';
           removeCalibrationPoints();
+          calInfo.textContent = prevPxPerMeter ? `${prevPxPerMeter.toFixed(2)} px/m` : 'Not calibrated';
+          updateCalibrationButton();
           return;
         }
         pxPerMeter = distPx / meters;
@@ -281,9 +288,18 @@ function drawCalibrationPoint(x,y){
   c.setAttribute('cx', x);
   c.setAttribute('cy', y);
   c.setAttribute('r', 6);
-  c.setAttribute('fill', 'red');
   c.setAttribute('class', 'calpoint');
   overlay.appendChild(c);
+}
+
+function drawCalibrationLine(p1, p2){
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1', p1.x);
+  line.setAttribute('y1', p1.y);
+  line.setAttribute('x2', p2.x);
+  line.setAttribute('y2', p2.y);
+  line.setAttribute('class', 'calpoint');
+  overlay.appendChild(line);
 }
 
 function removeCalibrationPoints(){

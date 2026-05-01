@@ -356,6 +356,13 @@ main {
   min-width: auto;
 }
 
+/* Calibration markers — terracotta accent reserved for live measurements */
+.calpoint {
+  fill: var(--measure);
+  stroke: var(--measure);
+  stroke-width: 2;
+}
+
 /* Project list */
 .project-list-empty {
   font-family: var(--font-mono);
