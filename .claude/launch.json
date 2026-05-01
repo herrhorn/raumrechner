@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "static",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 8080
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/sebastian/Code/raumrechner/static && python3 -m http.server $PORT"],
+      "port": 8080,
+      "autoPort": true
     }
   ]
 }
