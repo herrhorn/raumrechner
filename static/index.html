@@ -1,19 +1,36 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Grundriss Flächenmesser</title>
+  <title>Planar — Floor plan area measurer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
-    <h1>Grundriss Flächenmesser</h1>
+    <a class="brand" href="/" aria-label="Planar">
+      <svg class="brand-mark" width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="10" y="10" width="44" height="44" fill="none" stroke="currentColor" stroke-width="3"/>
+        <line x1="10" y1="6" x2="10" y2="14" stroke="currentColor" stroke-width="3"/>
+        <line x1="54" y1="6" x2="54" y2="14" stroke="currentColor" stroke-width="3"/>
+        <line x1="10" y1="50" x2="10" y2="58" stroke="currentColor" stroke-width="3"/>
+        <line x1="54" y1="50" x2="54" y2="58" stroke="currentColor" stroke-width="3"/>
+        <line x1="6" y1="10" x2="14" y2="10" stroke="currentColor" stroke-width="3"/>
+        <line x1="50" y1="10" x2="58" y2="10" stroke="currentColor" stroke-width="3"/>
+        <line x1="6" y1="54" x2="14" y2="54" stroke="currentColor" stroke-width="3"/>
+        <line x1="50" y1="54" x2="58" y2="54" stroke="currentColor" stroke-width="3"/>
+        <circle cx="32" cy="32" r="3" fill="currentColor"/>
+      </svg>
+      <h1>Planar</h1>
+    </a>
     <div class="zoom-controls">
-      <button id="zoomOut" title="Herauszoomen">−</button>
+      <button id="zoomOut" title="Zoom out">−</button>
       <span id="zoomLevel">100%</span>
-      <button id="zoomIn" title="Hineinzoomen">+</button>
-      <button id="zoomReset" title="Zoom zurücksetzen">Reset</button>
+      <button id="zoomIn" title="Zoom in">+</button>
+      <button id="zoomReset" title="Reset zoom">Reset</button>
     </div>
   </header>
   <main>
@@ -22,32 +39,32 @@
         <section class="card" data-card="grundriss">
           <button class="card-header" type="button">
             <span class="card-num">1</span>
-            <span class="card-title">Grundriss</span>
+            <span class="card-title">Plan</span>
             <span class="card-toggle" aria-hidden="true">▾</span>
           </button>
           <div class="card-body">
             <div class="field">
-              <label for="fileInput" class="field-label">PDF Datei</label>
+              <label for="fileInput" class="field-label">PDF file</label>
               <input id="fileInput" type="file" accept="application/pdf">
             </div>
             <div class="card-divider"></div>
             <div class="field">
-              <span class="field-label">Kalibrierung</span>
-              <span id="calInfo" class="field-value">Keine Kalibrierung</span>
+              <span class="field-label">Calibration</span>
+              <span id="calInfo" class="field-value">Not calibrated</span>
             </div>
-            <button id="startCal" class="btn btn-secondary">Kalibrieren (2 Punkte)</button>
+            <button id="startCal" class="btn btn-secondary">Calibrate (2 points)</button>
           </div>
         </section>
 
         <section class="card" data-card="polygons">
           <button class="card-header" type="button">
             <span class="card-num">2</span>
-            <span class="card-title">Polygone</span>
+            <span class="card-title">Polygons</span>
             <span class="card-toggle" aria-hidden="true">▾</span>
           </button>
           <div class="card-body">
-            <button id="drawPoly" class="btn btn-primary">+ Neues Polygon</button>
-            <button id="finishPoly" class="btn btn-secondary" hidden>Hinzufügen</button>
+            <button id="drawPoly" class="btn btn-primary">+ New polygon</button>
+            <button id="finishPoly" class="btn btn-secondary" hidden>Add</button>
             <div id="currentPolyName"></div>
             <div id="polygonList"></div>
           </div>
@@ -56,18 +73,18 @@
         <section class="card" data-card="project">
           <button class="card-header" type="button">
             <span class="card-num">3</span>
-            <span class="card-title">Projekt</span>
+            <span class="card-title">Project</span>
             <span class="card-toggle" aria-hidden="true">▾</span>
           </button>
           <div class="card-body">
-            <button id="exportPdf" class="btn btn-primary">Als PDF exportieren</button>
+            <button id="exportPdf" class="btn btn-primary">Export as PDF</button>
             <div class="card-divider"></div>
             <button id="saveCloud" class="btn btn-primary">↑ Save project</button>
             <div class="card-divider"></div>
             <div style="margin-bottom:6px">
-              <span class="field-label">Projekte</span>
+              <span class="field-label">Projects</span>
             </div>
-            <div id="projectList" style="font-size:13px;color:#999;min-height:24px">Laden…</div>
+            <div id="projectList" class="project-list-empty">Loading…</div>
           </div>
         </section>
       </aside>

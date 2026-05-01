@@ -16,13 +16,13 @@ function updateCalibrationButton() {
   startCal.classList.remove('btn-secondary', 'btn-danger', 'btn-success');
   if (pxPerMeter) {
     startCal.classList.add('btn-success');
-    startCal.textContent = 'Kalibriert';
+    startCal.textContent = '✓ Calibrated';
   } else if (pdfDoc) {
     startCal.classList.add('btn-danger');
-    startCal.textContent = 'Kalibrieren (2 Punkte)';
+    startCal.textContent = 'Calibrate (2 points)';
   } else {
     startCal.classList.add('btn-secondary');
-    startCal.textContent = 'Kalibrieren (2 Punkte)';
+    startCal.textContent = 'Calibrate (2 points)';
   }
 }
 
@@ -145,7 +145,7 @@ fileInput.addEventListener('change', (e) => {
 startCal.addEventListener('click', ()=>{
   calibrationMode = true;
   calPoints = [];
-  calInfo.textContent = 'Kalibrierung: Bitte 2 Punkte auf dem Grundriss klicken';
+  calInfo.textContent = 'Click two points on the plan';
   updateCursor();
 });
 
@@ -176,12 +176,12 @@ overlay.addEventListener('click', (ev)=>{
       const dx = calPoints[0].x - calPoints[1].x;
       const dy = calPoints[0].y - calPoints[1].y;
       const distPx = Math.sqrt(dx*dx + dy*dy);
-      const meters = parseFloat(prompt('Gib reale Länge der Linie in Metern ein (z.B. 5)'));
+      const meters = parseFloat(prompt('Enter the real length of this line in meters (e.g. 5)'));
       if(isNaN(meters) || meters <= 0){
-        alert('Ungültige Eingabe. Restart Kalibrierung.');
+        alert('Invalid input. Restart calibration.');
         calibrationMode = false;
         updateCursor();
-        calInfo.textContent = 'Keine Kalibrierung';
+        calInfo.textContent = 'Not calibrated';
         return;
       }
       pxPerMeter = distPx / meters;
@@ -287,10 +287,10 @@ function removeCalibrationPoints(){
   pts.forEach(p=>p.remove());
 }
 
-// Polygon color palette
+// Polygon color palette — Planar measure-red base, with muted ink-tinted variants
 const COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-  '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B88B', '#ABEBC6'
+  '#C24A2A', '#0F2A3F', '#7A8C5C', '#A36A2C', '#5C6B78',
+  '#8C3A4D', '#3F5566', '#A89456', '#4D5E4A', '#6B4F7A'
 ];
 
 function getNextColor() {
@@ -299,7 +299,7 @@ function getNextColor() {
 
 // Drawing controls
 drawPolyBtn.addEventListener('click', ()=>{
-  const name = prompt('Name für das neue Polygon:', `Polygon ${nextPolygonId}`);
+  const name = prompt('Name for the new polygon:', `Polygon ${nextPolygonId}`);
   if(!name) return;
   
   drawingMode = true;
@@ -309,7 +309,7 @@ drawPolyBtn.addEventListener('click', ()=>{
   drawPolyBtn.disabled = true;
   currentPolygon = [];
   currentPolygonId = nextPolygonId++;
-  currentPolyName.textContent = `Zeichne: ${name}`;
+  currentPolyName.textContent = `Drawing: ${name}`;
 
   // Create new polygon entry
   polygons.push({
@@ -328,7 +328,7 @@ drawPolyBtn.addEventListener('click', ()=>{
 
 finishPolyBtn.addEventListener('click', ()=>{
   if(!drawingMode || currentPolygon.length < 3) {
-    alert('Polygon benötigt mindestens 3 Punkte');
+    alert('Polygon requires at least 3 points');
     return;
   }
   
@@ -455,7 +455,7 @@ function redrawCurrentPolygon(){
   const existingPoints = overlay.querySelectorAll('.current-point');
   existingPoints.forEach(p => p.remove());
   
-  const color = polygons.find(p => p.id === currentPolygonId)?.color || '#0066cc';
+  const color = polygons.find(p => p.id === currentPolygonId)?.color || '#C24A2A';
   
   if(currentPolygon.length >= 2) {
     const shape = document.createElementNS('http://www.w3.org/2000/svg','polygon');
@@ -487,7 +487,7 @@ function updatePolygonList(){
   polygonList.innerHTML = '';
   
   if(polygons.length === 0) {
-    polygonList.innerHTML = '<div style="color:#999;font-size:13px">Keine Polygone</div>';
+    polygonList.innerHTML = '<div class="project-list-empty">No polygons</div>';
     return;
   }
   
@@ -496,21 +496,21 @@ function updatePolygonList(){
     item.className = 'polygon-item';
     if(!poly.visible) item.style.opacity = '0.5';
     
-    const areaText = poly.area !== null ? `${poly.area.toFixed(2)} m²` : 'Nicht kalibriert';
+    const areaText = poly.area !== null ? `${poly.area.toFixed(2)} m²` : 'Not calibrated';
     const workplaces = poly.workplaces || 0;
     
     item.innerHTML = `
       <div class="polygon-item-header">
         <div class="polygon-item-name"></div>
         <div class="polygon-item-actions">
-          <button class="btn-rename" title="Umbenennen">✏️</button>
-          <button class="btn-delete" title="Löschen">🗑️</button>
+          <button class="btn-rename" title="Rename">✎</button>
+          <button class="btn-delete" title="Delete">⌫</button>
         </div>
       </div>
       <div class="polygon-item-area">${areaText}</div>
       <div class="polygon-item-workplaces" style="margin-top:5px;display:flex;align-items:center;gap:8px;font-size:13px">
-        <label style="color:#666">Arbeitsplätze:</label>
-        <input type="number" class="workplaces-input" min="0" style="width:60px;padding:2px 5px;border:1px solid #ddd;border-radius:3px" />
+        <label style="color:var(--graphite);font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase">Workspaces</label>
+        <input type="number" class="workplaces-input" min="0" style="width:60px;padding:3px 6px;border:1px solid var(--rule);border-radius:0;font-family:var(--font-mono);font-size:12px;background:var(--vellum);color:var(--ink)" />
       </div>
     `;
     const nameEl = item.querySelector('.polygon-item-name');
@@ -529,7 +529,7 @@ function updatePolygonList(){
     // Rename
     item.querySelector('.btn-rename').addEventListener('click', (e) => {
       e.stopPropagation();
-      const newName = prompt('Neuer Name:', poly.name);
+      const newName = prompt('New name:', poly.name);
       if(newName) {
         poly.name = newName;
         isDirty = true;
@@ -540,7 +540,7 @@ function updatePolygonList(){
     // Delete
     item.querySelector('.btn-delete').addEventListener('click', (e) => {
       e.stopPropagation();
-      if(confirm(`"${poly.name}" löschen?`)) {
+      if(confirm(`Delete "${poly.name}"?`)) {
         polygons = polygons.filter(p => p.id !== poly.id);
         isDirty = true;
         renderAllPolygons();
@@ -572,11 +572,11 @@ function updatePolygonList(){
       .reduce((sum, p) => sum + p.area, 0);
     
     const summary = document.createElement('div');
-    summary.style.cssText = 'margin-top:15px;padding-top:15px;border-top:2px solid #e0e0e0;font-weight:bold;font-size:14px';
+    summary.style.cssText = 'margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px';
     summary.innerHTML = `
-      <div style="margin-bottom:5px">Gesamt:</div>
-      ${pxPerMeter && totalArea > 0 ? `<div style="color:#666;font-size:13px;margin-bottom:3px">Fläche: ${totalArea.toFixed(2)} m²</div>` : ''}
-      ${totalWorkplaces > 0 ? `<div style="color:#666;font-size:13px">Arbeitsplätze: ${totalWorkplaces}</div>` : ''}
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--graphite);margin-bottom:6px">Total</div>
+      ${pxPerMeter && totalArea > 0 ? `<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:3px"><span>Area</span><span>${totalArea.toFixed(2)} m²</span></div>` : ''}
+      ${totalWorkplaces > 0 ? `<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;font-weight:600"><span>Workspaces</span><span>${totalWorkplaces}</span></div>` : ''}
     `;
     polygonList.appendChild(summary);
   }
@@ -651,35 +651,35 @@ function setProjectListLoading(loading) {
 }
 
 async function saveProject() {
-  if (!pdfDoc) { alert('Bitte lade zuerst einen Grundriss'); return false; }
+  if (!pdfDoc) { alert('Load a plan first'); return false; }
   saveCloudBtn.disabled = true;
-  saveCloudBtn.textContent = 'Speichern…';
+  saveCloudBtn.textContent = 'Saving…';
   setProjectListLoading(true);
   try {
     if (!currentPdfBlobUrl) {
-      if (!currentPdfBytes) throw new Error('PDF-Daten nicht verfügbar – bitte Seite neu laden');
+      if (!currentPdfBytes) throw new Error('PDF data unavailable — please reload the page');
       const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
       const pdfResult = await blobUpload(`pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`, pdfFile);
       currentPdfBlobUrl = pdfResult.url;
     }
     if (!currentProjectBlobPathname) {
-      const safeName = (currentPdfFilename || 'projekt').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
+      const safeName = (currentPdfFilename || 'project').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
       currentProjectBlobPathname = `projects/${Date.now()}-${safeName}.json`;
     }
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
     await blobUpload(currentProjectBlobPathname, jsonFile);
     isDirty = false;
-    saveCloudBtn.textContent = '✓ Gespeichert';
+    saveCloudBtn.textContent = '✓ Saved';
     setTimeout(() => { saveCloudBtn.textContent = '↑ Save project'; }, 2000);
     loadProjectList();
     return true;
   } catch (err) {
-    alert('Fehler beim Cloud-Speichern: ' + err.message);
+    alert('Error saving to cloud: ' + err.message);
     return false;
   } finally {
     saveCloudBtn.disabled = false;
-    if (saveCloudBtn.textContent === 'Speichern…') saveCloudBtn.textContent = '↑ Save project';
+    if (saveCloudBtn.textContent === 'Saving…') saveCloudBtn.textContent = '↑ Save project';
     setProjectListLoading(false);
   }
 }
@@ -688,7 +688,7 @@ saveCloudBtn.addEventListener('click', () => saveProject());
 
 async function loadProjectFromUrl(url, pathname) {
   if (isDirty && currentProjectBlobPathname) {
-    const wantSave = confirm('Das aktuelle Projekt hat ungespeicherte Änderungen.\n\nJetzt speichern?');
+    const wantSave = confirm('The current project has unsaved changes.\n\nSave now?');
     if (wantSave) {
       const saved = await saveProject();
       if (!saved) return;
@@ -698,33 +698,33 @@ async function loadProjectFromUrl(url, pathname) {
   saveCloudBtn.disabled = true;
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(url));
-    if (!res.ok) throw new Error('Projekt nicht gefunden');
+    if (!res.ok) throw new Error('Project not found');
     const projectData = await res.json();
-    if (!projectData.polygons || !projectData.pdfBlobUrl) throw new Error('Ungültige Projekt-Datei');
+    if (!projectData.polygons || !projectData.pdfBlobUrl) throw new Error('Invalid project file');
 
     const pdfRes = await fetch('/api/blob-get?url=' + encodeURIComponent(projectData.pdfBlobUrl));
-    if (!pdfRes.ok) throw new Error('PDF nicht gefunden');
+    if (!pdfRes.ok) throw new Error('PDF not found');
     currentPdfBytes = await pdfRes.arrayBuffer();
     currentPdfBlobUrl = projectData.pdfBlobUrl;
-    currentPdfFilename = projectData.pdfFilename || 'cloud-projekt.pdf';
+    currentPdfFilename = projectData.pdfFilename || 'cloud-project.pdf';
     currentProjectBlobPathname = pathname || null;
 
     window.pendingProject = projectData;
     loadPdfFromUrl(URL.createObjectURL(new Blob([currentPdfBytes], { type: 'application/pdf' })));
   } catch (err) {
-    alert('Fehler beim Cloud-Laden: ' + err.message);
+    alert('Error loading from cloud: ' + err.message);
     setProjectListLoading(false);
     saveCloudBtn.disabled = false;
   }
 }
 
 async function renameProject(blob, currentName) {
-  const newName = prompt('Neuer Projektname:', currentName);
+  const newName = prompt('New project name:', currentName);
   if (!newName || newName === currentName) return;
 
   try {
     const res = await fetch('/api/blob-get?url=' + encodeURIComponent(blob.url));
-    if (!res.ok) throw new Error('Projekt nicht abrufbar');
+    if (!res.ok) throw new Error('Project not retrievable');
     const content = await res.text();
 
     const match = blob.pathname.match(/projects\/(\d+)-/);
@@ -736,7 +736,7 @@ async function renameProject(blob, currentName) {
       headers: { 'x-pathname': newPathname, 'x-content-type': 'application/json', 'content-type': 'application/json' },
       body: content,
     });
-    if (!putRes.ok) throw new Error('Umbenennen fehlgeschlagen');
+    if (!putRes.ok) throw new Error('Rename failed');
 
     await fetch('/api/blob-delete', {
       method: 'DELETE',
@@ -749,53 +749,53 @@ async function renameProject(blob, currentName) {
     }
     loadProjectList();
   } catch (err) {
-    alert('Fehler beim Umbenennen: ' + err.message);
+    alert('Error renaming: ' + err.message);
   }
 }
 
 async function deleteProject(blob, name) {
-  if (!confirm(`"${name}" löschen?`)) return;
+  if (!confirm(`Delete "${name}"?`)) return;
   try {
     const res = await fetch('/api/blob-delete', {
       method: 'DELETE',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url: blob.url }),
     });
-    if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+    if (!res.ok) throw new Error('Delete failed');
     if (blob.pathname === currentProjectBlobPathname) {
       currentProjectBlobPathname = null;
     }
     loadProjectList();
   } catch (err) {
-    alert('Fehler beim Löschen: ' + err.message);
+    alert('Error deleting: ' + err.message);
   }
 }
 
 async function loadProjectList() {
-  projectListEl.textContent = 'Laden…';
-  projectListEl.style.color = '#999';
+  projectListEl.textContent = 'Loading…';
+  projectListEl.classList.add('project-list-empty');
   try {
     const res = await fetch('/api/blob-list');
-    if (!res.ok) throw new Error('Fehler beim Abrufen');
+    if (!res.ok) throw new Error('Fetch failed');
     const blobs = await res.json();
 
     if (blobs.length === 0) {
-      projectListEl.textContent = 'Keine gespeicherten Projekte';
+      projectListEl.textContent = 'No saved projects';
       return;
     }
 
     projectListEl.innerHTML = '';
-    projectListEl.style.color = '';
+    projectListEl.classList.remove('project-list-empty');
     blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     blobs.forEach(blob => {
       const match = blob.pathname.match(/projects\/(\d+)-(.+)\.json$/);
       const name = match ? match[2].replace(/-/g, ' ') : blob.pathname;
-      const date = new Date(blob.uploadedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const date = new Date(blob.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
       const isActive = blob.pathname === currentProjectBlobPathname;
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;gap:6px;border:${isActive ? '2px solid #4a90e2;background:#f0f4ff' : '1px solid #e8e8e8'}`;
-      row.addEventListener('mouseenter', () => { if (!isActive) row.style.background = '#f0f4ff'; });
+      row.style.cssText = `display:flex;align-items:center;padding:8px 10px;margin-bottom:4px;gap:6px;border:1px solid ${isActive ? 'var(--ink)' : 'var(--rule)'};${isActive ? 'box-shadow: inset 2px 0 0 var(--ink); background: var(--paper);' : ''}`;
+      row.addEventListener('mouseenter', () => { if (!isActive) row.style.background = 'var(--paper)'; });
       row.addEventListener('mouseleave', () => { if (!isActive) row.style.background = ''; });
 
       const info = document.createElement('div');
@@ -808,21 +808,21 @@ async function loadProjectList() {
 
       const dateEl = document.createElement('div');
       dateEl.textContent = date;
-      dateEl.style.cssText = 'color:#999;font-size:11px';
+      dateEl.style.cssText = 'color:var(--graphite);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em';
 
       info.appendChild(nameEl);
       info.appendChild(dateEl);
 
       const renameBtn = document.createElement('button');
-      renameBtn.textContent = '✏️';
-      renameBtn.title = 'Umbenennen';
-      renameBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 4px;font-size:13px;flex-shrink:0';
+      renameBtn.textContent = '✎';
+      renameBtn.title = 'Rename';
+      renameBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 6px;font-size:14px;color:var(--graphite);flex-shrink:0';
       renameBtn.addEventListener('click', () => renameProject(blob, name));
 
       const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = '🗑️';
-      deleteBtn.title = 'Löschen';
-      deleteBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 4px;font-size:13px;flex-shrink:0';
+      deleteBtn.textContent = '⌫';
+      deleteBtn.title = 'Delete';
+      deleteBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 6px;font-size:14px;color:var(--graphite);flex-shrink:0';
       deleteBtn.addEventListener('click', () => deleteProject(blob, name));
 
       row.appendChild(info);
@@ -831,8 +831,8 @@ async function loadProjectList() {
       projectListEl.appendChild(row);
     });
   } catch (err) {
-    projectListEl.textContent = 'Fehler: ' + err.message;
-    projectListEl.style.color = '#c00';
+    projectListEl.textContent = 'Error: ' + err.message;
+    projectListEl.style.color = 'var(--measure)';
   }
 }
 
@@ -841,12 +841,12 @@ loadProjectList();
 // PDF Export functionality
 exportPdfBtn.addEventListener('click', async () => {
   if(!pdfDoc) {
-    alert('Bitte lade zuerst einen Grundriss');
+    alert('Load a plan first');
     return;
   }
   
   if(polygons.length === 0) {
-    alert('Keine Polygone zum Exportieren vorhanden');
+    alert('No polygons to export');
     return;
   }
   
@@ -865,7 +865,7 @@ exportPdfBtn.addEventListener('click', async () => {
   // Calculate required space for the list
   const visiblePolygons = polygons.filter(p => p.visible);
   const lineHeight = 5;
-  const headerHeight = 14; // Header "Polygone und Flächen:"
+  const headerHeight = 14; // Header "Polygons and areas:"
   const titleSpacing = 7;
   const totalLineSpacing = 3; // Space before total
   const totalLineHeight = 6; // Total line height
@@ -962,7 +962,7 @@ exportPdfBtn.addEventListener('click', async () => {
   let listY = yOffset + imgHeight + 15;
   pdf.setFontSize(14);
   pdf.setFont(undefined, 'bold');
-  pdf.text('Polygone und Flächen:', margin, listY);
+  pdf.text('Polygons and areas:', margin, listY);
   
   pdf.setFontSize(10);
   pdf.setFont(undefined, 'normal');
@@ -981,14 +981,14 @@ exportPdfBtn.addEventListener('click', async () => {
       // Add header on new page
       pdf.setFontSize(14);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Polygone und Flächen (Fortsetzung):', margin, margin);
+      pdf.text('Polygons and areas (continued):', margin, margin);
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       currentY = margin + 17;
     }
     
-    const areaText = poly.area !== null ? `${poly.area.toFixed(2)} m²` : 'Nicht kalibriert';
-    const workplacesText = (poly.workplaces && poly.workplaces > 0) ? ` | ${poly.workplaces} AP` : '';
+    const areaText = poly.area !== null ? `${poly.area.toFixed(2)} m²` : 'Not calibrated';
+    const workplacesText = (poly.workplaces && poly.workplaces > 0) ? ` | ${poly.workplaces} WS` : '';
     const text = `${polyIndex}. ${poly.name}: ${areaText}${workplacesText}`;
     
     // Draw colored square indicator
@@ -1022,17 +1022,17 @@ exportPdfBtn.addEventListener('click', async () => {
     pdf.setFont(undefined, 'bold');
     
     if(pxPerMeter && totalArea > 0) {
-      pdf.text(`Gesamtfläche: ${totalArea.toFixed(2)} m²`, margin, currentY);
+      pdf.text(`Total area: ${totalArea.toFixed(2)} m²`, margin, currentY);
       currentY += 6;
     }
     
     if(totalWorkplaces > 0) {
-      pdf.text(`Gesamt Arbeitsplätze: ${totalWorkplaces}`, margin, currentY);
+      pdf.text(`Total workspaces: ${totalWorkplaces}`, margin, currentY);
     }
   }
   
   // Save the PDF
-  pdf.save('grundriss-export.pdf');
+  pdf.save('planar-export.pdf');
 });
 
 // Basic helper to fetch example local file if needed
