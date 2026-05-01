@@ -176,22 +176,26 @@ overlay.addEventListener('click', (ev)=>{
       const dx = calPoints[0].x - calPoints[1].x;
       const dy = calPoints[0].y - calPoints[1].y;
       const distPx = Math.sqrt(dx*dx + dy*dy);
-      const meters = parseFloat(prompt('Enter the real length of this line in meters (e.g. 5)'));
-      if(isNaN(meters) || meters <= 0){
-        alert('Invalid input. Restart calibration.');
+      // Defer prompt so the browser paints the second point before the modal blocks rendering
+      setTimeout(() => {
+        const meters = parseFloat(prompt('Enter the real length of this line in meters (e.g. 5)'));
+        if(isNaN(meters) || meters <= 0){
+          alert('Invalid input. Restart calibration.');
+          calibrationMode = false;
+          updateCursor();
+          calInfo.textContent = 'Not calibrated';
+          removeCalibrationPoints();
+          return;
+        }
+        pxPerMeter = distPx / meters;
         calibrationMode = false;
         updateCursor();
-        calInfo.textContent = 'Not calibrated';
-        return;
-      }
-      pxPerMeter = distPx / meters;
-      calibrationMode = false;
-      updateCursor();
-      calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
-      removeCalibrationPoints();
-      updateCalibrationButton();
-      recalculateAllAreas();
-      isDirty = true;
+        calInfo.textContent = `${pxPerMeter.toFixed(2)} px/m`;
+        removeCalibrationPoints();
+        updateCalibrationButton();
+        recalculateAllAreas();
+        isDirty = true;
+      }, 0);
     }
     return;
   }
@@ -509,7 +513,7 @@ function updatePolygonList(){
       </div>
       <div class="polygon-item-area">${areaText}</div>
       <div class="polygon-item-workplaces" style="margin-top:5px;display:flex;align-items:center;gap:8px;font-size:13px">
-        <label style="color:var(--graphite);font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase">Workspaces</label>
+        <label style="color:var(--graphite);font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase">Desks</label>
         <input type="number" class="workplaces-input" min="0" style="width:60px;padding:3px 6px;border:1px solid var(--rule);border-radius:0;font-family:var(--font-mono);font-size:12px;background:var(--vellum);color:var(--ink)" />
       </div>
     `;
@@ -576,7 +580,7 @@ function updatePolygonList(){
     summary.innerHTML = `
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--graphite);margin-bottom:6px">Total</div>
       ${pxPerMeter && totalArea > 0 ? `<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:3px"><span>Area</span><span>${totalArea.toFixed(2)} m²</span></div>` : ''}
-      ${totalWorkplaces > 0 ? `<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;font-weight:600"><span>Workspaces</span><span>${totalWorkplaces}</span></div>` : ''}
+      ${totalWorkplaces > 0 ? `<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:13px;font-weight:600"><span>Desks</span><span>${totalWorkplaces}</span></div>` : ''}
     `;
     polygonList.appendChild(summary);
   }
@@ -988,7 +992,7 @@ exportPdfBtn.addEventListener('click', async () => {
     }
     
     const areaText = poly.area !== null ? `${poly.area.toFixed(2)} m²` : 'Not calibrated';
-    const workplacesText = (poly.workplaces && poly.workplaces > 0) ? ` | ${poly.workplaces} WS` : '';
+    const workplacesText = (poly.workplaces && poly.workplaces > 0) ? ` | ${poly.workplaces} D` : '';
     const text = `${polyIndex}. ${poly.name}: ${areaText}${workplacesText}`;
     
     // Draw colored square indicator
@@ -1027,7 +1031,7 @@ exportPdfBtn.addEventListener('click', async () => {
     }
     
     if(totalWorkplaces > 0) {
-      pdf.text(`Total workspaces: ${totalWorkplaces}`, margin, currentY);
+      pdf.text(`Total desks: ${totalWorkplaces}`, margin, currentY);
     }
   }
   
