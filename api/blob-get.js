@@ -1,5 +1,11 @@
+const { requireAuth } = require('./_auth');
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
+  const auth = await requireAuth(req, res);
+  if (!auth) return;
+  const { userId } = auth;
+
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'Missing url' });
 
@@ -8,8 +14,8 @@ module.exports = async function handler(req, res) {
   if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.blob.vercel-storage.com')) {
     return res.status(400).json({ error: 'URL not allowed' });
   }
-  if (!parsed.pathname.startsWith('/projects/') && !parsed.pathname.startsWith('/pdfs/')) {
-    return res.status(400).json({ error: 'URL not allowed' });
+  if (!parsed.pathname.startsWith(`/projects/${userId}/`) && !parsed.pathname.startsWith(`/pdfs/${userId}/`)) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
