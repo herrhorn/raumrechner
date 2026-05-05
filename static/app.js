@@ -5,6 +5,24 @@ if (window['pdfjsLib']) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/build/pdf.worker.js';
 }
 
+// Auth: redirect to login if not signed in. Populate user menu and load
+// project list once authenticated.
+let authReady = fetch('/api/auth/me').then(async (res) => {
+  if (res.status === 401) {
+    location.replace('/login.html');
+    throw new Error('unauthenticated');
+  }
+  if (!res.ok) throw new Error('auth check failed');
+  const { email } = await res.json();
+  document.getElementById('userEmail').textContent = email;
+  document.getElementById('userMenu').hidden = false;
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  location.replace('/login.html');
+});
+
 // Collapsible sidebar cards
 document.querySelectorAll('.card-header').forEach(header => {
   header.addEventListener('click', () => {
@@ -856,7 +874,7 @@ async function loadProjectList() {
   }
 }
 
-loadProjectList();
+authReady.then(loadProjectList).catch(() => {});
 
 // PDF Export functionality
 exportPdfBtn.addEventListener('click', async () => {

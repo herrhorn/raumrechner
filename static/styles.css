@@ -371,6 +371,107 @@ main {
   min-height: 24px;
 }
 
+/* Header user menu */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.user-menu .user-email {
+  letter-spacing: 0.04em;
+}
+.user-menu button {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid transparent;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  border-radius: 0;
+  letter-spacing: -0.005em;
+}
+.user-menu button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Auth pages (login, verify) */
+.auth-body {
+  background: var(--paper);
+  display: flex;
+  height: 100vh;
+}
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.auth-card {
+  background: var(--vellum);
+  border: 1px solid var(--rule);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+.auth-brand .brand-mark { color: var(--ink); }
+.auth-brand h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+.auth-lead {
+  font-size: 14px;
+  color: var(--ink);
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+.auth-detail {
+  font-size: 13px;
+  color: var(--graphite);
+  line-height: 1.5;
+  margin: 0;
+}
+.auth-detail strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.auth-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--ink);
+  background: var(--paper);
+  margin-bottom: 12px;
+  margin-top: 4px;
+}
+.auth-input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.auth-error {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--measure);
+}
+
 @media (max-width: 900px) {
   #mainContent { flex-direction: column; }
   #sidebar { width: 100%; max-height: 50vh; }

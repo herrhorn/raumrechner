@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@vercel/blob": "^2.3.3"
+    "@vercel/blob": "^2.3.3",
+    "jose": "^5.9.6",
+    "resend": "^4.0.1"
   },
   "scripts": {
     "install": "cd frontend && npm install",
