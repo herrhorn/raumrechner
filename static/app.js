@@ -765,10 +765,14 @@ async function renameProject(blob, currentName) {
     if (!res.ok) throw new Error('Project not retrievable');
     const content = await res.text();
 
-    const match = blob.pathname.match(/projects\/(\d+)-/);
-    const timestamp = match ? match[1] : Date.now();
+    // Preserve dir prefix (projects/<userId>/), keep the original timestamp,
+    // replace just the name portion of the filename.
+    const lastSlash = blob.pathname.lastIndexOf('/');
+    const dir = blob.pathname.substring(0, lastSlash + 1);
+    const tsMatch = blob.pathname.substring(lastSlash + 1).match(/^(\d+)-/);
+    const timestamp = tsMatch ? tsMatch[1] : Date.now();
     const safeName = newName.replace(/[^a-zA-Z0-9_\-]/g, '-');
-    const newPathname = `projects/${timestamp}-${safeName}.json`;
+    const newPathname = `${dir}${timestamp}-${safeName}.json`;
     const putRes = await fetch('/api/blob-put', {
       method: 'POST',
       headers: { 'x-pathname': newPathname, 'x-content-type': 'application/json', 'content-type': 'application/json' },
@@ -826,8 +830,9 @@ async function loadProjectList() {
     projectListEl.classList.remove('project-list-empty');
     blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     blobs.forEach(blob => {
-      const match = blob.pathname.match(/projects\/(\d+)-(.+)\.json$/);
-      const name = match ? match[2].replace(/-/g, ' ') : blob.pathname;
+      const filename = blob.pathname.substring(blob.pathname.lastIndexOf('/') + 1);
+      const match = filename.match(/^\d+-(.+)\.json$/);
+      const name = match ? match[1].replace(/-/g, ' ') : filename;
       const date = new Date(blob.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
       const isActive = blob.pathname === currentProjectBlobPathname;
