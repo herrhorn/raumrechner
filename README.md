@@ -64,6 +64,14 @@ Tests start by deleting all projects under the test user, so re-runs always
 start clean. They never touch your real account's data (different `userId`
 prefix in the blob store).
 
+### CI
+
+`.github/workflows/e2e.yml` runs Playwright after every successful Vercel
+deploy (preview for PRs, production for pushes to `main`). Requires a GitHub
+Actions secret named `JWT_SECRET` matching the Vercel env var. To gate PR
+merges on test results, add the workflow as a required status check in
+GitHub → Settings → Branches.
+
 ## Migration
 
 `scripts/migrate.js` moves root-level `projects/<x>.json` and `pdfs/<x>.pdf` blobs under a given user's prefix. Idempotent — already-migrated blobs are skipped. Run once locally per legacy user:
