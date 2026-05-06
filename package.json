@@ -7,8 +7,12 @@
     "jose": "^5.9.6",
     "resend": "^4.0.1"
   },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  },
   "scripts": {
     "install": "cd frontend && npm install",
-    "dev": "cd static && python3 -m http.server 8080"
+    "dev": "cd static && python3 -m http.server 8080",
+    "test:e2e": "playwright test"
   }
 }

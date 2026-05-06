@@ -48,6 +48,22 @@ Known gaps (acceptable for current scale, fix when needed):
 - **Magic-link tokens are stateless** — within their 15-minute window they're technically reusable. Single-use enforcement needs the same KV.
 - **No revocation** — logging out clears the cookie locally but the JWT remains valid until expiry (30d). Rotate `JWT_SECRET` to force-logout everyone.
 
+## Tests
+
+End-to-end smoke tests with Playwright. They run against any deployment URL
+and use a dedicated test user (`e2e@planar.test`) by signing a session JWT
+locally — no test-only endpoint in production.
+
+```bash
+npm install
+npx playwright install chromium  # one-time
+JWT_SECRET=<deployment-secret> BASE_URL=https://raumrechner.vercel.app npm run test:e2e
+```
+
+Tests start by deleting all projects under the test user, so re-runs always
+start clean. They never touch your real account's data (different `userId`
+prefix in the blob store).
+
 ## Migration
 
 `scripts/migrate.js` moves root-level `projects/<x>.json` and `pdfs/<x>.pdf` blobs under a given user's prefix. Idempotent — already-migrated blobs are skipped. Run once locally per legacy user:

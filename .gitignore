@@ -4,3 +4,5 @@ node_modules/
 .venv/
 .DS_Store
 memory/
+test-results/
+playwright-report/
