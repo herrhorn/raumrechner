@@ -7,13 +7,15 @@ if (window['pdfjsLib']) {
 
 // Auth: redirect to login if not signed in. Populate user menu and load
 // project list once authenticated.
+let currentUserId = null;
 let authReady = fetch('/api/auth/me').then(async (res) => {
   if (res.status === 401) {
     location.replace('/login.html');
     throw new Error('unauthenticated');
   }
   if (!res.ok) throw new Error('auth check failed');
-  const { email } = await res.json();
+  const { email, userId } = await res.json();
+  currentUserId = userId;
   document.getElementById('userEmail').textContent = email;
   document.getElementById('userMenu').hidden = false;
 });
@@ -697,12 +699,12 @@ async function saveProject() {
     if (!currentPdfBlobUrl) {
       if (!currentPdfBytes) throw new Error('PDF data unavailable — please reload the page');
       const pdfFile = new File([currentPdfBytes], currentPdfFilename || 'plan.pdf', { type: 'application/pdf' });
-      const pdfResult = await blobUpload(`pdfs/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`, pdfFile);
+      const pdfResult = await blobUpload(`pdfs/${currentUserId}/${Date.now()}-${currentPdfFilename || 'plan.pdf'}`, pdfFile);
       currentPdfBlobUrl = pdfResult.url;
     }
     if (!currentProjectBlobPathname) {
       const safeName = (currentPdfFilename || 'project').replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9_\-]/g, '-');
-      currentProjectBlobPathname = `projects/${Date.now()}-${safeName}.json`;
+      currentProjectBlobPathname = `projects/${currentUserId}/${Date.now()}-${safeName}.json`;
     }
     const projectData = { ...buildProjectData(), pdfBlobUrl: currentPdfBlobUrl };
     const jsonFile = new File([JSON.stringify(projectData, null, 2)], 'project.json', { type: 'application/json' });
