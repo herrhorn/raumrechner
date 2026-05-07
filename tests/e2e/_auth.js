@@ -2,13 +2,9 @@
 // cookie. Lets tests skip the magic-link flow entirely without adding any
 // test-only endpoint to production.
 const { SignJWT } = require('jose');
-const { createHash } = require('crypto');
+const { userIdFromEmail } = require('../../api/_auth');
 
 const TEST_EMAIL = process.env.TEST_EMAIL || 'e2e@planar.test';
-
-function userIdFromEmail(email) {
-  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex').slice(0, 16);
-}
 
 async function signSessionToken(email) {
   const secret = process.env.JWT_SECRET;
