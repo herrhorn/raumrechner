@@ -38,37 +38,25 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Verify JWT_SECRET matches deployment
+      - name: Resolve test URL
+        id: url
         run: |
-          TOKEN=$(node -e "
-            const { SignJWT } = require('jose');
-            new SignJWT({ userId: 'diag', email: 'diag@test', type: 'session' })
-              .setProtectedHeader({ alg: 'HS256' })
-              .setIssuedAt()
-              .setExpirationTime('5m')
-              .sign(new TextEncoder().encode(process.env.JWT_SECRET))
-              .then(t => process.stdout.write(t));
-          ")
-          BODY=$(curl -s -w "\nHTTP:%{http_code}" \
-            -H "Cookie: planar_session=${TOKEN}" \
-            "${BASE_URL}/api/auth/me")
-          STATUS=$(echo "$BODY" | grep "^HTTP:" | cut -d: -f2)
-          echo "Deployment: ${BASE_URL}"
-          echo "auth/me → HTTP ${STATUS}"
-          echo "Response body: $(echo "$BODY" | grep -v "^HTTP:")"
-          echo "Secret length: ${#JWT_SECRET}  prefix: ${JWT_SECRET:0:6}"
-          if [ "$STATUS" != "200" ]; then
-            echo "JWT_SECRET in GitHub Secrets does not match Vercel env var — update one to match the other."
-            exit 1
+          # Vercel's per-deployment URLs are protected by Vercel Authentication on
+          # the Hobby plan. Use the canonical production domain for production
+          # deployments; fall back to the deployment-specific URL for previews.
+          if [ "$ENVIRONMENT" = "Production" ]; then
+            echo "base_url=https://raumrechner.vercel.app" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_url=${DEPLOYMENT_URL}" >> "$GITHUB_OUTPUT"
           fi
         env:
-          BASE_URL: ${{ github.event.deployment_status.target_url }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ENVIRONMENT: ${{ github.event.deployment.environment }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          BASE_URL: ${{ github.event.deployment_status.target_url }}
+          BASE_URL: ${{ steps.url.outputs.base_url }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
       - name: Upload Playwright report on failure
