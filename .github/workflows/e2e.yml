@@ -49,10 +49,13 @@ jobs:
               .sign(new TextEncoder().encode(process.env.JWT_SECRET))
               .then(t => process.stdout.write(t));
           ")
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          BODY=$(curl -s -w "\nHTTP:%{http_code}" \
             -H "Cookie: planar_session=${TOKEN}" \
             "${BASE_URL}/api/auth/me")
+          STATUS=$(echo "$BODY" | grep "^HTTP:" | cut -d: -f2)
+          echo "Deployment: ${BASE_URL}"
           echo "auth/me → HTTP ${STATUS}"
+          echo "Response body: $(echo "$BODY" | grep -v "^HTTP:")"
           echo "Secret length: ${#JWT_SECRET}  prefix: ${JWT_SECRET:0:6}"
           if [ "$STATUS" != "200" ]; then
             echo "JWT_SECRET in GitHub Secrets does not match Vercel env var — update one to match the other."
