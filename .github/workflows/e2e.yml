@@ -53,6 +53,7 @@ jobs:
             -H "Cookie: planar_session=${TOKEN}" \
             "${BASE_URL}/api/auth/me")
           echo "auth/me → HTTP ${STATUS}"
+          echo "Secret length: ${#JWT_SECRET}  prefix: ${JWT_SECRET:0:6}"
           if [ "$STATUS" != "200" ]; then
             echo "JWT_SECRET in GitHub Secrets does not match Vercel env var — update one to match the other."
             exit 1
