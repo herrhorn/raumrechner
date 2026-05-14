@@ -18,6 +18,7 @@ let authReady = fetch('/api/auth/me').then(async (res) => {
   currentUserId = userId;
   document.getElementById('userEmail').textContent = email;
   document.getElementById('userMenu').hidden = false;
+  document.body.style.visibility = '';
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
