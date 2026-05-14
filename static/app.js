@@ -545,7 +545,7 @@ function updatePolygonList(){
         <div class="polygon-item-name"></div>
         <div class="polygon-item-actions">
           <button class="btn-rename" title="Rename">✎</button>
-          <button class="btn-delete" title="Delete">⌫</button>
+          <button class="btn-delete" title="Delete"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,3 12,3"/><path d="M4.5,3V2a.5.5,0,0,1,.5-.5h3a.5.5,0,0,1,.5.5v1"/><path d="M2.5,3l.6,8a.5.5,0,0,0,.5.5h5.8a.5.5,0,0,0,.5-.5l.6-8"/><line x1="5" y1="6" x2="5" y2="9.5"/><line x1="8" y1="6" x2="8" y2="9.5"/></svg></button>
         </div>
       </div>
       <div class="polygon-item-area">${areaText}</div>
@@ -866,7 +866,7 @@ async function loadProjectList() {
       renameBtn.addEventListener('click', () => renameProject(blob, name));
 
       const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = '⌫';
+      deleteBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,3 12,3"/><path d="M4.5,3V2a.5.5,0,0,1,.5-.5h3a.5.5,0,0,1,.5.5v1"/><path d="M2.5,3l.6,8a.5.5,0,0,0,.5.5h5.8a.5.5,0,0,0,.5-.5l.6-8"/><line x1="5" y1="6" x2="5" y2="9.5"/><line x1="8" y1="6" x2="8" y2="9.5"/></svg>';
       deleteBtn.title = 'Delete';
       deleteBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px 6px;font-size:14px;color:var(--graphite);flex-shrink:0';
       deleteBtn.addEventListener('click', () => deleteProject(blob, name));
